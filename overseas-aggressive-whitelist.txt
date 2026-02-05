@@ -131,6 +131,8 @@
 @@||paypal.com^
 @@||paypalobjects.com^
 @@||stripe.com^
+@@||speedtest.net^
+@@||fast.com^
 @@||squareup.com^
 @@||hcaptcha.com^
 @@||okta.com^

@@ -18,7 +18,8 @@
 @@||bootstrapcdn.com^
 @@||stackpathcdn.com^
 @@||cdnjs.cloudflare.com^
-
+@@||speedtest.net^
+@@||fast.com^
 @@||amazonaws.com^
 @@||awsstatic.com^
 @@||elasticbeanstalk.com^
@@ -131,8 +132,7 @@
 @@||paypal.com^
 @@||paypalobjects.com^
 @@||stripe.com^
-@@||speedtest.net^
-@@||fast.com^
+
 @@||squareup.com^
 @@||hcaptcha.com^
 @@||okta.com^

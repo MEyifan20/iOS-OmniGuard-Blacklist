@@ -2,9 +2,12 @@ name: OmniGuard Auto Update
 
 on:
   schedule:
-    # 每天北京时间凌晨 4:00 自动执行 (对应 UTC 时间 20:00)
     - cron: '0 20 * * *'
-  workflow_dispatch: # 允许在 GitHub 仓库的 Actions 页面手动点击运行
+  workflow_dispatch:
+
+# 新增这行权限配置，允许机器人修改和推送代码
+permissions:
+  contents: write
 
 jobs:
   update-rules:

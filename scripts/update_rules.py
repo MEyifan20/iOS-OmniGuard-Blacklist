@@ -11,9 +11,9 @@ README_FILE = 'README.md'
 # 严苛模式：404 链接不写入模块
 STRICT_MODE = True
 
-# 2026 最新校对后的链接
+# === 2026-02-26 路径修正 ===
 SOURCES = {
-    "bili": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/bilibili.js",
+    "bili": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/Bilibili.js",
     "youtube": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js",
     "amap": "https://github.com/ddgksf2013/Scripts/raw/master/amap.js",
     "wechat": "https://raw.githubusercontent.com/zZPiglet/Task/master/asset/UnblockURLinWeChat.js",
@@ -21,7 +21,7 @@ SOURCES = {
     "qimao": "https://raw.githubusercontent.com/I-am-R-E/QuantumultX/main/JavaScript/QiMaoXiaoShuo.js"
 }
 
-COMMON_HEADERS = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15'}
+COMMON_HEADERS = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU OS 17_6 like Mac OS X) AppleWebKit/605.1.15'}
 update_logs = []
 
 def check_url(item):
@@ -37,20 +37,30 @@ def check_url(item):
         return name, False
 
 def process_blacklist():
-    print("⏳ 同步黑名单...")
+    print("⏳ 同步黑名单中...")
     try:
         upstream_resp = requests.get(UPSTREAM_URL, headers=COMMON_HEADERS, timeout=20)
         upstream_rules = set([l.strip() for l in upstream_resp.text.splitlines() if l.strip() and not l.startswith(('!', '#'))])
     except:
-        update_logs.append("⚠️ 上游拉取失败")
+        update_logs.append("⚠️ 上游规则拉取失败")
         return
 
-    if not os.path.exists(BLACKLIST_FILE):
-        with open(BLACKLIST_FILE, 'w') as f: f.write("! Version: \n! Updated: \n")
+    if not os.path.exists(BLACKLIST_FILE): return
 
     with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
+        content = f.read()
 
+    # --- 核心修复：更强的正则匹配更新时间 ---
+    tz = datetime.timezone(datetime.timedelta(hours=8))
+    now = datetime.datetime.now(tz)
+    version_str, time_str = now.strftime("%Y.%m.%d.%H"), now.strftime("%Y-%m-%d %H:%M")
+    
+    # 匹配 ! Version: 或 !Version: 等各种变体
+    content = re.sub(r'(!\s*Version:\s*).*', rf'\g<1>{version_str}', content)
+    content = re.sub(r'(!\s*Updated:\s*).*', rf'\g<1>{time_str}', content)
+
+    # 处理去重逻辑
+    lines = content.splitlines()
     new_lines = []
     removed_count = 0
     special_re = re.compile(r'\$important|##|#%#|@@')
@@ -63,22 +73,14 @@ def process_blacklist():
             removed_count += 1; continue
         new_lines.append(line)
 
-    tz = datetime.timezone(datetime.timedelta(hours=8))
-    now = datetime.datetime.now(tz)
-    version_str, time_str = now.strftime("%Y.%m.%d.%H"), now.strftime("%Y-%m-%d %H:%M")
-    
-    content = "".join(new_lines)
-    content = re.sub(r'! Version: .*', f'! Version: {version_str}', content)
-    content = re.sub(r'! Updated: .*', f'! Updated: {time_str}', content)
-
     with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
-        f.write(content)
-    if removed_count > 0: update_logs.append(f"🧹 剔除重复规则 {removed_count} 条")
+        f.write("\n".join(new_lines))
+    if removed_count > 0: update_logs.append(f"🧹 自动剔除重复规则 {removed_count} 条")
 
 def generate_mitm_module(health):
     print("⏳ 生成模块...")
-    # 模块内的脚本条目模板
     s_list = []
+    # 集成逻辑... (此处逻辑同上，已更新链接变量)
     if health.get("bili"): s_list.append(f'bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll|interface\\.v1\\.Search/Default|resource\\.show\\.v1\\.Tab/GetTabs|account\\.v1\\.Account/Mine)$,requires-body=1,binary-body-mode=1,script-path={SOURCES["bili"]}')
     if health.get("youtube"): s_list.append(f'youtube.response = type=http-response,pattern=^https://youtubei\\.googleapis\\.com/youtubei/v1/(browse|next|player|search|reel/reel_watch_sequence|guide|account/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SOURCES["youtube"]},argument="{{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true,\\"blockImmersive\\":true,\\"debug\\":false}}"')
     if health.get("amap"): s_list.append(f'amap_ad = type=http-response,pattern=^https?://.*\\.amap\\.com/ws/(faas/amap-navigation/main-page|valueadded/alimama/splash_screen|msgbox/pull|shield/(shield/dsp/profile/index/nodefaas|search/new_hotword)),requires-body=1,script-path={SOURCES["amap"]}')
@@ -88,7 +90,7 @@ def generate_mitm_module(health):
 
     scripts_block = "\n".join(s_list)
     module_content = f"""#!name = iOS-OmniGuard Predator-MitM
-#!desc = 状态: {"正常" if len(s_list)==6 else "部分功能下线"} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')}
+#!desc = 状态: {"🟢 正常" if len(s_list)==6 else "🟠 部分异常"} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')}
 #!category = OmniGuard
 #!system = ios
 
@@ -132,7 +134,9 @@ def update_readme():
     cdn_mitm = f"https://cdn.jsdelivr.net/gh/{REPO_FULL_NAME}@main/{MITM_MODULE_FILE}"
     cdn_dns = f"https://cdn.jsdelivr.net/gh/{REPO_FULL_NAME}@main/{BLACKLIST_FILE}"
     with open(README_FILE, 'r', encoding='utf-8') as f: content = f.read()
-    content = re.sub(r'\*\*最后修改时间\*\*：.*', f'**最后修改时间**：{time_str} (GMT+8)', content)
+    
+    # README 里的时间更新正则也同步增强
+    content = re.sub(r'(\*\*最后修改时间\*\*：).*', rf'\g<1>{time_str} (GMT+8)', content)
     
     cdn_h = "## 🚀 全自动 CDN 订阅地址"
     cdn_b = f"\n{cdn_h}\n- **Predator-MitM 模块**: `{cdn_mitm}`\n- **DNS 黑名单**: `{cdn_dns}`\n"

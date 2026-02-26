@@ -93,25 +93,25 @@ $$Block \cap \{Ad, Tracker, Hijack\} \setminus \{Core\_Service\} = \emptyset$$
 ---
 **iOS-OmniGuard-Blacklist** · 愿你的网络环境干净且自由。
 
-**最后修改时间**：2026-02-26 20:38 (GMT+8)
+**最后修改时间**：2026-02-26 21:05 (GMT+8)
 
 ---
 **Maintained by**: [MEyifan20](https://github.com/MEyifan20)  
 **License**: [MIT](https://opensource.org/licenses/mit-license.php)
 
 ## 🚀 全自动 CDN 订阅地址
-- **Predator-MitM 模块**: `https://cdn.jsdelivr.net/gh/MEyifan20/iOS-OmniGuard-Blacklist@main/OmniGuard-Predator-MitM.sgmodule`
-- **DNS 黑名单**: `https://cdn.jsdelivr.net/gh/MEyifan20/iOS-OmniGuard-Blacklist@main/iOS-OmniGuard-Blacklist.txt`
+- **模块**: `https://cdn.jsdelivr.net/gh/MEyifan20/iOS-OmniGuard-Blacklist@main/OmniGuard-Predator-MitM.sgmodule`
+- **DNS**: `https://cdn.jsdelivr.net/gh/MEyifan20/iOS-OmniGuard-Blacklist@main/iOS-OmniGuard-Blacklist.txt`
 
 
 
 
 
 ## 📅 最近更新动态
-> 更新于: 2026-02-26 20:38
-- 🚨 bili 失效(404)，已冻结旧版
-- ✅ youtube 同步成功
-- ✅ amap 同步成功
-- ✅ wechat 同步成功
-- 🚨 baidu 失效(404)，已冻结旧版
-- ✅ qimao 同步成功
+> 更新于: 2026-02-26 21:05
+- 🚨 bili 失效(404)
+- ✅ youtube 正常
+- ✅ amap 正常
+- ✅ wechat 正常
+- 🚨 baidu 失效(404)
+- ✅ qimao 正常

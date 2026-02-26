@@ -1,19 +1,21 @@
-#!name=iOS-OmniGuard Predator-MitM
-#!desc=iOS-OmniGuard-Blacklist 专属配套模块。利用 HTTPS 解密与 URL 重写技术，深度剔除主流视频(优爱腾芒/B站)及阅读(七猫/番茄)等 App 内部的加密广告。
-#!category=OmniGuard
-#!author=MEyifan20
-#!homepage=https://github.com/MEyifan20/iOS-OmniGuard-Blacklist
-#!system=ios
+#!name = iOS-OmniGuard Predator-MitM
+#!desc = iOS-OmniGuard-Blacklist 专属配套模块。集成 YouTube 增强及主流 App (优爱腾/B站/知乎/番茄等) 深度去广告。
+#!category = OmniGuard
+#!author = MEyifan20 & Maasea
+#!homepage = https://github.com/MEyifan20/iOS-OmniGuard-Blacklist
+#!system = ios
+
+[Rule]
+# === YouTube 协议优化 (强制回退 TCP 以确保去广告生效) ===
+AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
+AND,((DOMAIN-KEYWORD,youtubei), (PROTOCOL,UDP)),REJECT
 
 https://ahrefs.com/writing-tools/paragraph-rewriter
 # === 哔哩哔哩 (Bilibili) 深度去广告 ===
-# 拦截开屏广告并返回空数据 (避免黑屏卡顿)
 ^https?:\/\/app\.bilibili\.com\/x\/v2\/splash\/list - reject-dict
 ^https?:\/\/api\.bilibili\.com\/x\/v2\/splash - reject-dict
-# 拦截动态信息流、首页推荐中的横幅与广告位
 ^https?:\/\/api\.bilibili\.com\/x\/v2\/feed\/index\/ads - reject-dict
 ^https?:\/\/api\.bilibili\.com\/pgc\/page\/(cinema\/tab\?)?ad - reject-dict
-# 屏蔽版本强制更新弹窗
 ^https?:\/\/api\.bilibili\.com\/x\/v2\/version - reject-dict
 
 # === 知乎 (Zhihu) 深度去广告 ===
@@ -22,41 +24,45 @@ https://ahrefs.com/writing-tools/paragraph-rewriter
 ^https?:\/\/api\.zhihu\.com\/moments_v3\?.*ad_ - reject-dict
 
 # === 腾讯视频 (Tencent Video) 去广告增强 ===
-# 阻断视频播放前的贴片广告与底栏推荐广告
 ^https?:\/\/btrace\.video\.qq\.com\/kvcollect - reject
 ^https?:\/\/info6\.video\.qq\.com\/getinfo\?.*adtype - reject
 ^https?:\/\/adsmind\.gdtimg\.com\/.* - reject
 
 # === 爱奇艺 (iQIYI) 深度去广告 ===
-# 拦截播放器内部强制贴片与 Cupid 广告引擎
 ^https?:\/\/t7z\.cupid\.iqiyi\.com\/.* - reject-dict
 ^https?:\/\/policy\.video\.iqiyi\.com\/.* - reject-dict
 
 # === 优酷 (Youku) 深度去广告 ===
-# 拦截开屏与视频前插广告 API
 ^https?:\/\/ad\.api\.3g\.youku\.com\/.* - reject-dict
 ^https?:\/\/iyes\.youku\.com\/.* - reject-dict
 
 # === 芒果TV (MangoTV) 深度去广告 ===
-# 拦截开屏、贴片与上报日志
 ^https?:\/\/mobile\.api\.hunantv\.com\/v1\/ad\/.* - reject-dict
 ^https?:\/\/log\.v2\.hunantv\.com\/.* - reject
 
 # === 番茄小说 (Fanqiao) 深度去广告 ===
-# 拦截字节跳动穿山甲广告网络注入的激励视频与信息流
 ^https?:\/\/p\d+-ad-sign\.byteimg\.com\/.* - reject
 ^https?:\/\/v\d+-ad\.bytebe\.com\/.* - reject
 
 # === 七猫小说 (Qimao) 深度去广告 ===
-# 拦截快手联盟及自有广告引擎的书页穿插广告
 ^https?:\/\/api-ks\.qimao\.com\/.* - reject-dict
 ^https?:\/\/t-ads\.qimao\.com\/.* - reject-dict
 ^https?:\/\/wtw\.qimao\.com\/api\/ad\/.* - reject-dict
 
 # === 小红书 (Xiaohongshu) 净化推荐 ===
-# 拦截小红书开屏闪屏广告配置
 ^https?:\/\/edith\.xiaohongshu\.com\/api\/sns\/v\d\/system_service\/splash_config - reject-dict
 
+# === YouTube 广告拦截与重写 ===
+(^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
+^https?:\/\/[\w-]+\.googlevideo\.com\/(?!(dclk_video_ads|videoplayback\?)).+&oad _ reject-200
+^https?:\/\/(www|s)\.youtube\.com\/api\/stats\/ads _ reject-200
+^https?:\/\/(www|s)\.youtube\.com\/(pagead|ptracking) _ reject-200
+^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?adcontext _ reject-200
+
+[Script]
+# === YouTube 增强处理 (去广告、翻译、PiP) ===
+youtube.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js,argument="{"lyricLang":"zh-Hans","captionLang":"zh-Hans","blockUpload":true,"blockImmersive":true,"debug":false}"
+
 [MITM]
-# 仅对以下特定广告 API 域名进行 HTTPS 解密，绝不监听隐私与支付域名
-hostname = %APPEND% app.bilibili.com, api.bilibili.com, api.zhihu.com, btrace.video.qq.com, info6.video.qq.com, adsmind.gdtimg.com, t7z.cupid.iqiyi.com, policy.video.iqiyi.com, ad.api.3g.youku.com, iyes.youku.com, mobile.api.hunantv.com, log.v2.hunantv.com, *ad-sign.byteimg.com, *ad.bytebe.com, api-ks.qimao.com, t-ads.qimao.com, wtw.qimao.com, edith.xiaohongshu.com
+# 域名合并，已排除 googlevideo 的重定向流以节省资源
+hostname = %APPEND% app.bilibili.com, api.bilibili.com, api.zhihu.com, btrace.video.qq.com, info6.video.qq.com, adsmind.gdtimg.com, t7z.cupid.iqiyi.com, policy.video.iqiyi.com, ad.api.3g.youku.com, iyes.youku.com, mobile.api.hunantv.com, log.v2.hunantv.com, *ad-sign.byteimg.com, *ad.bytebe.com, api-ks.qimao.com, t-ads.qimao.com, wtw.qimao.com, edith.xiaohongshu.com, www.youtube.com, s.youtube.com, youtubei.googleapis.com, -*redirector*.googlevideo.com, *.googlevideo.com

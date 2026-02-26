@@ -1,109 +1,72 @@
-import os, datetime, requests, re
+# 🛡️ iOS-OmniGuard-Blacklist (Predator-Standard)
 
-# ==========================================================
-# 1. 订阅链接与资源配置 (放在开头方便修改)
-# ==========================================================
-USER = "MEyifan20"
-REPO = "iOS-OmniGuard-Blacklist"
+[Adblock Plus 2.0]
+! Title: iOS-OmniGuard-Blacklist (Standard Unified Edition)
+! Description: 针对 iOS 环境深度优化的全能黑名单旗舰版。采用去重增强架构，精准锁定 Google、YouTube 及国内主流视频/阅读 APP，与 Whitelist 实现 100% 逻辑闭环。
+! Version: 2026.02.26.23
+! Codename: Predator-Standard
+! Updated: 2026-02-26 15:47
+! -------------------------------------------------------------------------------------------------------
 
-# CDN 订阅地址 (用于 README 展示)
-CDN_MODULE = f"https://cdn.jsdelivr.net/gh/{USER}/{REPO}@main/OmniGuard-Predator-MitM.sgmodule"
-CDN_BLACKLIST = f"https://cdn.jsdelivr.net/gh/{USER}/{REPO}@main/iOS-OmniGuard-Blacklist.txt"
+## 📖 项目简介
+**iOS-OmniGuard-Blacklist** 是专为 iOS 高级用户打造的“去重增强型”拦截方案。本方案不仅通过高强度的 `$important` 标签和路径级规则剥离广告，更集成了 Cosmetic Filtering（视觉美化）与 Advanced Scriptlets（脚本注入），实现从网络层到渲染层的全维度净网。
 
-# 脚本原生资源
-SOURCES = {
-    "bili": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/Bilibili.js",
-    "youtube": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js",
-    "amap": "https://raw.githubusercontent.com/ddgksf2013/Scripts/master/amap.js",
-    "wechat": "https://raw.githubusercontent.com/zZPiglet/Task/master/asset/UnblockURLinWeChat.js",
-    "baidu": "https://raw.githubusercontent.com/Choler/Surge/master/Script/BaiduCloud.js",
-    "qimao": "https://raw.githubusercontent.com/I-am-R-E/QuantumultX/main/JavaScript/QiMaoXiaoShuo.js"
-}
+本库已完成对 **iOS-OmniGuard-Whitelist** 的全量冲突校验，并针对全球最大规则集 217heidai/adblockdns 完成了物理去重，确保系统资源占用极低。
 
-# ==========================================================
-# 2. 核心逻辑
-# ==========================================================
-BLACKLIST_FILE = 'iOS-OmniGuard-Blacklist.txt'
-MITM_MODULE_FILE = 'OmniGuard-Predator-MitM.sgmodule'
-README_FILE = 'README.md'
+---
 
-def main():
-    tz = datetime.timezone(datetime.timedelta(hours=8))
-    now = datetime.datetime.now(tz)
-    t_str = now.strftime("%Y-%m-%d %H:%M")
-    v_str = now.strftime("%Y.%m.%d.%H")
-    status_logs = []
+## 🚀 订阅地址
 
-    # --- 阶段 A: 更新黑名单元数据 ---
-    if os.path.exists(BLACKLIST_FILE):
-        with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f: lines = f.readlines()
-        with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
-            for l in lines:
-                if '! Version:' in l: f.write(f"! Version: {v_str}\n")
-                elif '! Updated:' in l: f.write(f"! Updated: {t_str}\n")
-                else: f.write(l)
+[ jsDelivr CDN 加速 (推荐国内直连) ]
+https://cdn.jsdelivr.net/gh/MEyifan20/iOS-OmniGuard-Blacklist@main/iOS-OmniGuard-Blacklist.txt
 
-    # --- 阶段 B: 静默探测资源 ---
-    for name, url in SOURCES.items():
-        try:
-            r = requests.get(url, timeout=8)
-            if r.status_code == 200: status_logs.append(f"✅ {name} 正常")
-            else: status_logs.append(f"🚨 {name} 失效({r.status_code})")
-        except: status_logs.append(f"⚠️ {name} 超时")
+[ GitHub 原生地址 ]
+https://raw.githubusercontent.com/MEyifan20/iOS-OmniGuard-Blacklist/refs/heads/main/iOS-OmniGuard-Blacklist.txt
 
-    # --- 阶段 C: 构造全量模块 ---
-    yt_arg = 'argument="{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true}"'
-    m = f"#!name = iOS-OmniGuard Predator-MitM\n#!desc = 状态: 运行中 | 更新: {t_str}\n"
-    m += "#!category = OmniGuard\n#!system = ios\n\n"
-    m += "^https?://.*\\.amap\\.com/ws/(boss/order_web/\\w{8}_information|asa/ads_attribution) _ reject\n"
-    m += "^https?://pan\\.baidu\\.com/act/.+ad_ - reject\n\n[Script]\n"
-    m += f'bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll)$,requires-body=1,binary-body-mode=1,script-path={SOURCES["bili"]}\n'
-    m += f'youtube.response = type=http-response,pattern=^https://youtubei\\.googleapis\\.com/youtubei/v1/(browse|next|player),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SOURCES["youtube"]},{yt_arg}\n'
-    m += f'baidu_cloud = type=http-response,pattern=^https?://pan\\.baidu\\.com/rest/2\\.0/membership/user,requires-body=1,script-path={SOURCES["baidu"]}\n'
-    m += f'\n[MITM]\nhostname = %APPEND% *amap.com, pan.baidu.com, app.bilibili.com, *.googlevideo.com, youtubei.googleapis.com\n'
+---
 
-    with open(MITM_MODULE_FILE, 'w', encoding='utf-8') as f: f.write(m)
+## 💎 核心优势
+* 🚀 极速补丁: 剔除 20w+ 冗余域名，仅保留高频变动与高难度的特定规则。
+* 🎯 路径级过滤: 突破 DNS 拦截局限，精准锁定 YouTube 视频中插及 Google 统计脚本路径。
+* 👻 视觉与注入: 支持元素隐藏（剔除空白占位）与 JS 脚本注入（绕过反去广告检测）。
+* 📖 深度专项: 内置“优爱腾芒”及“七猫/番茄”等国内主流视频与小说 APP 的专项补丁。
 
-    # --- 阶段 D: 更新 README (优化字体与布局) ---
-    if os.path.exists(README_FILE):
-        with open(README_FILE, 'r', encoding='utf-8') as f: 
-            lines = f.readlines()
-        
-        # 移除旧的订阅地址和动态日志，准备重新生成
-        new_content = []
-        skip_mode = False
-        for line in lines:
-            if "### 🚀 CDN 订阅地址" in line or "## 📅 最近更新动态" in line:
-                skip_mode = True
-            if skip_mode and (line.startswith("## ") or line.startswith("---")) and not ("### 🚀" in line or "## 📅" in line):
-                skip_mode = False
-            if not skip_mode:
-                new_content.append(line)
+---
 
-        # 构造新模块
-        sub_section = f"### 🚀 CDN 订阅地址\n- 模块: `{CDN_MODULE}`\n- 屏蔽: `{CDN_BLACKLIST}`\n\n"
-        log_section = f"## 📅 最近更新动态\n> 更新于: {t_str}\n" + '\n'.join([f"- {s}" for s in status_logs]) + "\n"
+## 🛠️ 技术指标 (Technical Metrics)
+| 模块名称 | 拦截目标 | 策略强度 |
+| :--- | :--- | :--- |
+| **Priority Targets** | Google 广告集群、GTM 追踪 | 核心 (Core) |
+| **YouTube Predator** | 视频中插、QOE 统计、短视频广告 | 实时 (Real-time) |
+| **CN Video Shield** | 优爱腾芒、B站动态广告 | 专项 (Special) |
+| **Reading Shield** | 七猫/番茄小说穿插、激励视频 | 深度 (Clean) |
+| **Advanced Shield** | 元素折叠 (CSS)、反检测劫持 (JS) | 注入 (Inject) |
 
-        # 组装：将订阅地址插入到开头（通常在第一行标题后）
-        final_lines = []
-        if new_content and new_content[0].startswith("# "):
-            final_lines.append(new_content[0])
-            final_lines.append(sub_section)
-            final_lines.extend(new_content[1:])
-        else:
-            final_lines.append(sub_section)
-            final_lines.extend(new_content)
+---
 
-        # 更新时间戳并追加日志
-        res_md = "".join(final_lines)
-        res_md = re.sub(r'\*\*最后修改时间\*\*：.*', f'**最后修改时间**：{t_str} (GMT+8)', res_md)
-        if "## 📅 最近更新动态" not in res_md:
-            res_md += f"\n---\n{log_section}"
-        else:
-            res_md = re.sub(r'## 📅 最近更新动态.*', log_section, res_md, flags=re.DOTALL)
+## ⚙️ 配置建议
+1. **添加路径**：防护 (盾牌图标) -> DNS 防护 -> DNS 过滤 -> DNS 过滤器 -> 添加过滤器。
+2. **务必同时订阅** iOS-OmniGuard-Whitelist 并将其优先级设为最高，以确保系统服务不被误杀。
+3. **配合使用**: 本列表已针对 217heidai 规则去重，建议将两者配合使用。
 
-        with open(README_FILE, 'w', encoding='utf-8') as f: 
-            f.write(res_md.strip())
+---
 
-if __name__ == '__main__':
-    main()
+## 🤝 致谢与声明
+* 致谢: 感谢 EasyList, AdRules 及 217heidai 提供的基础数据支持。
+* 声明: 本项目仅供技术研究与交流使用，禁止用于任何非法用途。
+
+---
+
+## ❤️ 助力项目
+
+- **点亮 Star**：点击右上角 ⭐ Star，这是对我持续维护最大的动力。
+- **反馈问题**：请提交 [Issues](https://github.com/MEyifan20/iOS-OmniGuard-Blacklist/issues)。
+
+---
+**iOS-OmniGuard-Blacklist** · 愿你的网络环境干净且自由。
+
+**最后修改时间**：2026-02-26 15:47 (GMT+8)
+
+---
+**Maintained by**: [MEyifan20](https://github.com/MEyifan20)  
+**License**: [MIT](https://opensource.org/licenses/mit-license.php)

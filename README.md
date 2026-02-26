@@ -80,8 +80,3 @@ https://raw.githubusercontent.com/MEyifan20/iOS-OmniGuard-Blacklist/refs/heads/m
 **最后修改时间**：2026-02-26 22:45 (GMT+8)
 **Maintained by**: [MEyifan20](https://github.com/MEyifan20)  
 **License**: [MIT](https://opensource.org/licenses/mit-license.php)
-
-
-## 🚀 全自动 CDN 订阅地址
-- **模块**: `https://cdn.jsdelivr.net/gh/MEyifan20/iOS-OmniGuard-Blacklist@main/OmniGuard-Predator-MitM.sgmodule`
-- **DNS**: `https://cdn.jsdelivr.net/gh/MEyifan20/iOS-OmniGuard-Blacklist@main/iOS-OmniGuard-Blacklist.txt`

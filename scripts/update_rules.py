@@ -1,16 +1,15 @@
-import os, re, datetime, requests
+import os
+import re
+import datetime
+import requests
 from concurrent.futures import ThreadPoolExecutor
 
-# === 配置区 ===
+# === 自动获取环境变量 ===
+REPO_FULL_NAME = os.environ.get('GITHUB_REPOSITORY', 'MEyifan20/iOS-OmniGuard-Blacklist')
 UPSTREAM_URL = "https://raw.githubusercontent.com/217heidai/adblockdns/main/rule/adblockdns.txt"
 BLACKLIST_FILE = 'iOS-OmniGuard-Blacklist.txt'
 MITM_MODULE_FILE = 'OmniGuard-Predator-MitM.sgmodule'
 README_FILE = 'README.md'
-
-# 无人值守策略：模拟高权重真实浏览器，减少被 GitHub 拦截几率
-COMMON_HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
-}
 
 CHECK_LIST = [
     "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/bilibili.enhance.js",
@@ -21,31 +20,39 @@ CHECK_LIST = [
     "https://raw.githubusercontent.com/I-am-R-E/QuantumultX/main/JavaScript/QiMaoXiaoShuo.js"
 ]
 
+COMMON_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
+}
+
+# 全局变量用于存储更新日志摘要
+update_logs = []
+
 def check_url(url):
-    """检测链接，若失败则重试一次"""
-    for _ in range(2): 
-        try:
-            with requests.Session() as s:
-                resp = s.get(url, headers=COMMON_HEADERS, timeout=12)
-                if resp.status_code == 200: return None
-                return f"{url} [{resp.status_code}]"
-        except: continue
-    return f"{url} (Timeout/Unknown)"
+    try:
+        with requests.Session() as s:
+            resp = s.get(url, headers=COMMON_HEADERS, timeout=12)
+            if resp.status_code == 200:
+                return None
+            msg = f"链接失效: {url.split('/')[-1]} [{resp.status_code}]"
+            update_logs.append(f"❌ {msg}")
+            return f"{url} [{resp.status_code}]"
+    except Exception as e:
+        update_logs.append(f"⚠️ 网络超时: {url.split('/')[-1]}")
+        return f"{url} (Timeout)"
 
 def process_blacklist():
-    print("⏳ 同步黑名单中...")
+    print("⏳ 正在同步黑名单...")
     try:
-        # 无人值守优化：设置较长超时，失败则跳过去重步骤
-        upstream_resp = requests.get(UPSTREAM_URL, headers=COMMON_HEADERS, timeout=40)
-        upstream_resp.raise_for_status()
+        upstream_resp = requests.get(UPSTREAM_URL, headers=COMMON_HEADERS, timeout=30)
         upstream_rules = set([l.strip() for l in upstream_resp.text.splitlines() if l.strip() and not l.startswith(('!', '#'))])
-    except Exception as e:
-        print(f"⚠️ 上游 DNS 规则拉取失败 (可能网络波动)，跳过去重: {e}")
+    except:
+        update_logs.append("⚠️ 无法连接上游 DNS 仓库，跳过本轮去重。")
         return
 
     if not os.path.exists(BLACKLIST_FILE): return
     with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
+        old_content = f.read()
+        lines = old_content.splitlines()
 
     new_lines = []
     removed_count = 0
@@ -59,31 +66,28 @@ def process_blacklist():
             removed_count += 1; continue
         new_lines.append(line)
 
+    if removed_count > 0:
+        update_logs.append(f"🧹 黑名单优化：自动剔除 {removed_count} 条与上游重复的规则。")
+
     tz = datetime.timezone(datetime.timedelta(hours=8))
     now = datetime.datetime.now(tz)
     version_str, time_str = now.strftime("%Y.%m.%d.%H"), now.strftime("%Y-%m-%d %H:%M")
     
-    content = "".join(new_lines)
+    content = "\n".join(new_lines)
     content = re.sub(r'! Version: .*', f'! Version: {version_str}', content)
     content = re.sub(r'! Updated: .*', f'! Updated: {time_str}', content)
 
     with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
         f.write(content)
-    print(f"✅ 黑名单处理完成。")
 
 def generate_mitm_module(failed_urls):
-    """
-    无人值守逻辑：即使检测失败也要生成模块文件，
-    但在描述中加入动态更新的警告，方便手机端观察。
-    """
-    print("⏳ 生成 MitM 模块中...")
-    status_msg = "所有组件状态正常" if not failed_urls else f"警告: 有 {len(failed_urls)} 个链接异常"
+    print("⏳ 正在生成 MitM 模块...")
+    status_emoji = "🟢" if not failed_urls else "🟠"
+    if not failed_urls:
+        update_logs.append("✅ 核心脚本健康检测通过，所有外部资源在线。")
     
-    # 构建模块头部描述
-    warning_comment = "".join([f"# ⚠️ 异常链接: {u}\n" for u in failed_urls]) if failed_urls else ""
-
-    module_template = f"""{warning_comment}#!name = iOS-OmniGuard Predator-MitM
-#!desc = 集成净化模块 | 状态: {status_msg} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')} | 提示: B站/YouTube 需开启 HTTP/2。
+    module_template = f"""#!name = iOS-OmniGuard Predator-MitM
+#!desc = 状态: {"正常" if not failed_urls else "部分异常"} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')} | 自动同步 Maasea 等资源。
 #!category = OmniGuard
 #!system = ios
 
@@ -99,7 +103,7 @@ DOMAIN-KEYWORD,zijieapi,REJECT
 DOMAIN-SUFFIX,pglstatp-toutiao.com,REJECT
 IP-CIDR,49.71.37.101/32,REJECT,no-resolve
 
-https://monica.im/en/tools/rewrite-text
+https://ahrefs.com/writing-tools/paragraph-rewriter
 ^https?://.*\\.amap\\.com/ws/(boss/order_web/\\w{{8}}_information|asa/ads_attribution|shield/scene/recommend) _ reject
 ^https?://pan\\.baidu\\.com/act/.+ad_ - reject
 ^https?://api\\.zhihu\\.com/commercial_api/real_time_zone - reject-dict
@@ -130,16 +134,43 @@ hostname = %APPEND% *amap.com, security.wechat.com, weixin110.qq.com, pan.baidu.
 def update_readme():
     if not os.path.exists(README_FILE): return
     time_str = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).strftime("%Y-%m-%d %H:%M")
+    cdn_mitm = f"https://cdn.jsdelivr.net/gh/{REPO_FULL_NAME}@main/{MITM_MODULE_FILE}"
+    cdn_dns = f"https://cdn.jsdelivr.net/gh/{REPO_FULL_NAME}@main/{BLACKLIST_FILE}"
+
     with open(README_FILE, 'r', encoding='utf-8') as f:
         content = f.read()
+
+    # 1. 更新最后修改时间
     content = re.sub(r'\*\*最后修改时间\*\*：.*', f'**最后修改时间**：{time_str} (GMT+8)', content)
+
+    # 2. 更新 CDN 地址
+    cdn_header = "## 🚀 全自动 CDN 订阅地址"
+    cdn_body = f"\n{cdn_header}\n- **Predator-MitM 模块**: `{cdn_mitm}`\n- **DNS 黑名单**: `{cdn_dns}`\n"
+    if cdn_header in content:
+        content = re.sub(f"{cdn_header}.*?txt`", cdn_body.strip(), content, flags=re.DOTALL)
+    else:
+        content += cdn_body
+
+    # 3. 更新自动生成的【最近更新动态】
+    log_header = "## 📅 最近更新动态"
+    log_content = f"\n{log_header}\n> 更新于: {time_str}\n\n" + "\n".join([f"- {item}" for item in update_logs]) + "\n"
+    
+    if log_header in content:
+        # 使用正则表达式替换旧的 Log 区域
+        content = re.sub(f"{log_header}.*?(?=\n##|$)", log_content, content, flags=re.DOTALL)
+    else:
+        content += log_content
+
     with open(README_FILE, 'w', encoding='utf-8') as f:
         f.write(content)
+    print("✅ README.md 更新动态已同步。")
 
 if __name__ == '__main__':
+    update_logs.append("🚀 开始自动化执行构建任务...")
     with ThreadPoolExecutor(max_workers=3) as executor:
         future_failed = executor.submit(lambda: [r for r in list(map(check_url, CHECK_LIST)) if r])
         process_blacklist()
         failed_urls = future_failed.result()
     generate_mitm_module(failed_urls)
+    update_logs.append("📦 所有规则文件编译完成。")
     update_readme()

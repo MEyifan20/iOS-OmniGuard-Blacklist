@@ -1,6 +1,16 @@
 import os, datetime, requests, re
 
 # ==========================================================
+# 自动定位路径：获取脚本所在目录的上一级（即仓库根目录）
+# ==========================================================
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# 拼接根目录文件的绝对路径
+BLACKLIST_FILE = os.path.join(BASE_DIR, 'iOS-OmniGuard-Blacklist.txt')
+MITM_MODULE_FILE = os.path.join(BASE_DIR, 'OmniGuard-Predator-MitM.sgmodule')
+README_FILE = os.path.join(BASE_DIR, 'README.md')
+
+# ==========================================================
 # 1. 订阅链接与资源配置
 # ==========================================================
 USER = "MEyifan20"
@@ -17,13 +27,6 @@ SOURCES = {
     "baidu": "https://raw.githubusercontent.com/Choler/Surge/master/Script/BaiduCloud.js",
     "qimao": "https://raw.githubusercontent.com/I-am-R-E/QuantumultX/main/JavaScript/QiMaoXiaoShuo.js"
 }
-
-# ==========================================================
-# 2. 核心逻辑
-# ==========================================================
-BLACKLIST_FILE = 'iOS-OmniGuard-Blacklist.txt'
-MITM_MODULE_FILE = 'OmniGuard-Predator-MitM.sgmodule'
-README_FILE = 'README.md'
 
 def main():
     tz = datetime.timezone(datetime.timedelta(hours=8))
@@ -51,7 +54,7 @@ def main():
     
     status_logs.append("✅ fanqie 规则已集成")
 
-    # --- 阶段 C: 构造全量模块 (使用原始字符串防止转义报错) ---
+    # --- 阶段 C: 构造全量模块 (集成番茄系规则) ---
     yt_arg = r'argument="{\"lyricLang\":\"zh-Hans\",\"captionLang\":\"zh-Hans\",\"blockUpload\":true}"'
     
     m = f"#!name = iOS-OmniGuard Predator-MitM\n#!desc = 状态: 运行中 | 更新: {t_str}\n"
@@ -59,7 +62,6 @@ def main():
     m += "https://www.merriam-webster.com/dictionary/rewrite\n"
     m += r"^https?://.*\.amap\.com/ws/(boss/order_web/\w{8}_information|asa/ads_attribution) reject" + "\n"
     m += r"^https?://pan\.baidu\.com/act/.+ad_ reject" + "\n"
-    # 番茄系穿山甲规则
     m += r"^https?://.+\.pangolin-sdk-toutiao\.com/api/ad/union/sdk/(get_ads|stats|settings)/ reject" + "\n"
     m += r"^https?://gurd\.snssdk\.com/src/server/v3/package reject" + "\n\n"
     
@@ -76,7 +78,6 @@ def main():
     if os.path.exists(README_FILE):
         with open(README_FILE, 'r', encoding='utf-8') as f: content = f.read()
         
-        # 1. 更新时间戳
         lines = content.splitlines()
         new_lines = []
         for line in lines:
@@ -90,21 +91,17 @@ def main():
                 new_lines.append(line)
         content = '\n'.join(new_lines)
 
-        # 2. 更新动态日志 (更加稳健的逻辑)
         log_header = "## 📅 最近更新动态"
         log_body = f"\n> 更新于: {t_str}\n" + '\n'.join([f"- {s}" for s in status_logs]) + "\n"
         
         if log_header in content:
-            # 使用简单的字符串分割替换，避免正则表达式死锁
             parts = content.split(log_header)
-            # 找到日志板块后的下一个大标题或文档末尾
             suffix = parts[1].split("\n---")
             if len(suffix) > 1:
                 content = parts[0] + log_header + log_body + "\n---" + "---".join(suffix[1:])
             else:
                 content = parts[0] + log_header + log_body
         else:
-            # 如果不存在，则在倒数第二行（页脚前）插入
             content = content.replace("\n---", f"\n\n{log_header}{log_body}\n---", 1)
 
         with open(README_FILE, 'w', encoding='utf-8') as f: f.write(content)

@@ -1,5 +1,5 @@
 #!name = iOS-OmniGuard Predator-MitM
-#!desc = 模块状态: 🟢 正常 | 更新时间: 2026-02-26 19:52
+#!desc = 状态: 🟢 正常 | 更新: 2026-02-26 20:00
 #!category = OmniGuard
 #!system = ios
 
@@ -15,7 +15,7 @@ DOMAIN-KEYWORD,zijieapi,REJECT
 DOMAIN-SUFFIX,pglstatp-toutiao.com,REJECT
 IP-CIDR,49.71.37.101/32,REJECT,no-resolve
 
-https://monica.im/en/tools/rewrite-text
+https://ahrefs.com/writing-tools/paragraph-rewriter
 ^https?://.*\.amap\.com/ws/(boss/order_web/\w{{8}}_information|asa/ads_attribution|shield/scene/recommend) _ reject
 ^https?://pan\.baidu\.com/act/.+ad_ - reject
 ^https?://api\.zhihu\.com/commercial_api/real_time_zone - reject-dict

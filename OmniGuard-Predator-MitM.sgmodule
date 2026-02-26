@@ -1,53 +1,16 @@
-name: Auto Update OmniGuard
+#!name = iOS-OmniGuard Predator-MitM
+#!desc = 状态: 运行中 | 更新: 2026-02-26 22:35
+#!category = OmniGuard
+#!system = ios
 
-# 触发条件
-on:
-  schedule:
-    # 每天北京时间早上 6 点执行 (UTC 时间前一天 22:00)
-    - cron: '0 22 * * *'
-  workflow_dispatch: # 允许在 GitHub Actions 页面手动点击运行
+https://ahrefs.com/writing-tools/paragraph-rewriter
+^https?://.*\.amap\.com/ws/(boss/order_web/\w{8}_information|asa/ads_attribution) _ reject
+^https?://pan\.baidu\.com/act/.+ad_ - reject
 
-jobs:
-  build-and-update:
-    runs-on: ubuntu-latest
-    
-    # 赋予 Action 读写仓库代码的权限，以便推送更新后的文件
-    permissions:
-      contents: write
+[Script]
+bili.enhance = type=http-response,pattern=^https://app\.bilibili\.com/bilibili\.app\.(view\.v1\.View/View|dynamic\.v2\.Dynamic/DynAll)$,requires-body=1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/Bilibili.js
+youtube.response = type=http-response,pattern=^https://youtubei\.googleapis\.com/youtubei/v1/(browse|next|player),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js,argument="{\"lyricLang\":\"zh-Hans\",\"captionLang\":\"zh-Hans\",\"blockUpload\":true}"
+baidu_cloud = type=http-response,pattern=^https?://pan\.baidu\.com/rest/2\.0/membership/user,requires-body=1,script-path=https://raw.githubusercontent.com/Choler/Surge/master/Script/BaiduCloud.js
 
-    steps:
-      # 1. 拉取仓库代码
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      # 2. 设置 Python 环境
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-
-      # 3. 安装依赖库 (脚本中用到了 requests)
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests
-
-      # 4. 运行您的 Python 脚本 (请确保下方脚本名称与您仓库中的一致)
-      - name: Run update script
-        run: |
-          python main.py
-
-      # 5. 提交并推送变更
-      - name: Commit and push changes
-        run: |
-          git config --local user.name "github-actions[bot]"
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          
-          # 检查是否有文件发生变化，有变化才提交，避免报错
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Auto update OmniGuard rules and metadata [skip ci]"
-            git push
-          fi
+[MITM]
+hostname = %APPEND% *amap.com, pan.baidu.com, app.bilibili.com, *.googlevideo.com, youtubei.googleapis.com

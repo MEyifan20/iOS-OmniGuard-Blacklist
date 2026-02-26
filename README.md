@@ -94,8 +94,20 @@ $$Block \cap \{Ad, Tracker, Hijack\} \setminus \{Core\_Service\} = \emptyset$$
 ---
 **iOS-OmniGuard-Blacklist** · 愿你的网络环境干净且自由。
 
-**最后修改时间**：2026-02-26 17:57 (GMT+8)
+**最后修改时间**：2026-02-26 18:06 (GMT+8)
 
 ---
 **Maintained by**: [MEyifan20](https://github.com/MEyifan20)  
 **License**: [MIT](https://opensource.org/licenses/mit-license.php)
+
+## 🚀 全自动 CDN 订阅地址
+- **Predator-MitM 模块**: `https://cdn.jsdelivr.net/gh/MEyifan20/iOS-OmniGuard-Blacklist@main/OmniGuard-Predator-MitM.sgmodule`
+- **DNS 黑名单**: `https://cdn.jsdelivr.net/gh/MEyifan20/iOS-OmniGuard-Blacklist@main/iOS-OmniGuard-Blacklist.txt`
+
+## 📅 最近更新动态
+> 更新于: 2026-02-26 18:06
+
+- 🚀 开始自动化执行构建任务...
+- ❌ 链接失效: bilibili.enhance.js [404]
+- ❌ 链接失效: BaiduCloud.js [404]
+- 📦 所有规则文件编译完成。

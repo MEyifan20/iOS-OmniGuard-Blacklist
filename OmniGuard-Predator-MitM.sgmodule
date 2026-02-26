@@ -1,7 +1,5 @@
-# ⚠️ 异常链接: https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/bilibili.enhance.js [404]
-# ⚠️ 异常链接: https://raw.githubusercontent.com/Choler/Surge/master/Script/BaiduCloud.js [404]
 #!name = iOS-OmniGuard Predator-MitM
-#!desc = 集成净化模块 | 状态: 警告: 有 2 个链接异常 | 更新: 02-26 09:57 | 提示: B站/YouTube 需开启 HTTP/2。
+#!desc = 状态: 部分异常 | 更新: 02-26 10:06 | 自动同步 Maasea 等资源。
 #!category = OmniGuard
 #!system = ios
 
@@ -17,7 +15,7 @@ DOMAIN-KEYWORD,zijieapi,REJECT
 DOMAIN-SUFFIX,pglstatp-toutiao.com,REJECT
 IP-CIDR,49.71.37.101/32,REJECT,no-resolve
 
-https://monica.im/en/tools/rewrite-text
+https://ahrefs.com/writing-tools/paragraph-rewriter
 ^https?://.*\.amap\.com/ws/(boss/order_web/\w{8}_information|asa/ads_attribution|shield/scene/recommend) _ reject
 ^https?://pan\.baidu\.com/act/.+ad_ - reject
 ^https?://api\.zhihu\.com/commercial_api/real_time_zone - reject-dict

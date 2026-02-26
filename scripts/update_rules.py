@@ -49,19 +49,19 @@ def main():
             else: status_logs.append(f"🚨 {name} 失效({r.status_code})")
         except: status_logs.append(f"⚠️ {name} 超时")
     
-    # 手动添加番茄系规则集成状态（因其为内置 Reject 规则，非外部脚本）
     status_logs.append("✅ fanqie 规则已集成")
 
-    # --- 阶段 C: 构造全量模块 (集成番茄系规则) ---
-    yt_arg = 'argument="{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true}"'
+    # --- 阶段 C: 构造全量模块 (使用原始字符串防止转义报错) ---
+    yt_arg = r'argument="{\"lyricLang\":\"zh-Hans\",\"captionLang\":\"zh-Hans\",\"blockUpload\":true}"'
     
     m = f"#!name = iOS-OmniGuard Predator-MitM\n#!desc = 状态: 运行中 | 更新: {t_str}\n"
     m += "#!category = OmniGuard\n#!system = ios\n\n"
     m += "https://www.merriam-webster.com/dictionary/rewrite\n"
-    m += "^https?://.*\\.amap\\.com/ws/(boss/order_web/\\w{8}_information|asa/ads_attribution) reject\n"
-    m += "^https?://pan\\.baidu\\.com/act/.+ad_ reject\n"
-    m += "^https?://.+\\.pangolin-sdk-toutiao\\.com/api/ad/union/sdk/(get_ads|stats|settings)/ reject\n"
-    m += "^https?://gurd\\.snssdk\\.com/src/server/v3/package reject\n\n"
+    m += r"^https?://.*\.amap\.com/ws/(boss/order_web/\w{8}_information|asa/ads_attribution) reject" + "\n"
+    m += r"^https?://pan\.baidu\.com/act/.+ad_ reject" + "\n"
+    # 番茄系穿山甲规则
+    m += r"^https?://.+\.pangolin-sdk-toutiao\.com/api/ad/union/sdk/(get_ads|stats|settings)/ reject" + "\n"
+    m += r"^https?://gurd\.snssdk\.com/src/server/v3/package reject" + "\n\n"
     
     m += "[Script]\n"
     m += f'bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll)$,requires-body=1,binary-body-mode=1,script-path={SOURCES["bili"]}\n'
@@ -76,6 +76,7 @@ def main():
     if os.path.exists(README_FILE):
         with open(README_FILE, 'r', encoding='utf-8') as f: content = f.read()
         
+        # 1. 更新时间戳
         lines = content.splitlines()
         new_lines = []
         for line in lines:
@@ -89,11 +90,22 @@ def main():
                 new_lines.append(line)
         content = '\n'.join(new_lines)
 
-        log_block = f"## 📅 最近更新动态\n> 更新于: {t_str}\n" + '\n'.join([f"- {s}" for s in status_logs])
-        if "## 📅 最近更新动态" in content:
-            content = re.sub(r"## 📅 最近更新动态.*?(?=\n##|$)", log_block, content, flags=re.DOTALL)
+        # 2. 更新动态日志 (更加稳健的逻辑)
+        log_header = "## 📅 最近更新动态"
+        log_body = f"\n> 更新于: {t_str}\n" + '\n'.join([f"- {s}" for s in status_logs]) + "\n"
+        
+        if log_header in content:
+            # 使用简单的字符串分割替换，避免正则表达式死锁
+            parts = content.split(log_header)
+            # 找到日志板块后的下一个大标题或文档末尾
+            suffix = parts[1].split("\n---")
+            if len(suffix) > 1:
+                content = parts[0] + log_header + log_body + "\n---" + "---".join(suffix[1:])
+            else:
+                content = parts[0] + log_header + log_body
         else:
-            content = content.replace("\n---", f"\n\n{log_block}\n\n---", 1)
+            # 如果不存在，则在倒数第二行（页脚前）插入
+            content = content.replace("\n---", f"\n\n{log_header}{log_body}\n---", 1)
 
         with open(README_FILE, 'w', encoding='utf-8') as f: f.write(content)
 

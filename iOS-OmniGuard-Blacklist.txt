@@ -1,16 +1,15 @@
 [Adblock Plus 2.0]
 ! Title: iOS-OmniGuard-Blacklist (Standard Unified Edition)
 ! Description: 针对 iOS 环境深度优化的全能黑名单旗舰版。已剔除 adblockdns 冗余项，保留高强度路径拦截与 $important 强制修正规则。
-! Version: 2026.02.26.22
+! Version: 2026.02.26.21
 ! Codename: Predator-Standard
-! Updated: 2026-02-26
-! Homepage: https://github.com/MEyifan20/Whitelist
+! Updated: 2026-02-26 15:20
+! Homepage: https://github.com/MEyifan20/iOS-OmniGuard-Blacklist
 ! License: https://opensource.org/licenses/mit-license.php
-! Changelog: 1. 完成对 217heidai 最新库的物理去重；2. 保留 DNS 库无法实现的路径级/修饰符级高级规则；3. 锁定国内阅读与视频 APP 的关键上报节点。
+! Changelog: 1. 修正订阅链接仓库路径为 iOS-OmniGuard-Blacklist；2. 更新反馈 Issue 地址；3. 同步时间戳至 15:20。
 ! -------------------------------------------------------------------------------------------------------
 
 ! === Priority Targets (核心打击与广告分发) ===
-! 此部分包含路径级拦截，DNS 过滤器无法替代
 /googleads.$~script,domain=~googleads.github.io
 /pagead/lvz?
 ||google.com/pagead/
@@ -25,7 +24,6 @@
 ||stats.g.doubleclick.net^
 
 ! === YouTube Advanced Shield (YouTube 深度盾牌) ===
-! 利用修饰符精准锁定播放器内部注入，DNS 库无此类细化规则
 ||static.doubleclick.net^$domain=youtube.com
 ||youtube.com/get_midroll_
 ||s.youtube.com^$important,domain=youtube.com
@@ -37,7 +35,6 @@
 ||play.google.com/log$domain=youtube.com
 
 ! === Global Ad Networks & Tracking (全球广告网络) ===
-! 针对近期高频活跃的广告节点进行 $important 强化
 ||adpushup.com^$important
 ||ads.aralego.com^$important
 ||data.flurry.com^$important
@@ -49,7 +46,6 @@
 ||wwads.cn^$important
 
 ! === CN Essentials: Ad & Tracking (国内大厂广告) ===
-! 针对国内特定 App SDK 的强制压制，确保拦截优先级
 ||ad-static-xg.tagtic.cn^$important
 ||appd.xinbochegn.com^$important
 ||p3-passport.byteacctimg.com^$important
@@ -59,7 +55,6 @@
 ||dig.bdurl.net^$important
 
 ! === Mainstream Video & Media (流媒体与视频专项) ===
-! 针对优爱腾芒/B站的专项日志拦截
 ||btrace.video.qq.com^$important
 ||info6.video.qq.com^$important
 ||oth.eve.mdt.qq.com^$important
@@ -74,7 +69,6 @@
 ||api.bilibili.com/x/v2/feed/index/ads
 
 ! === Reading & Malicious Nodes (阅读 APP 与恶意节点) ===
-! 针对小说/阅读类（七猫、番茄等）及其高危劫持节点
 ||api-ks.qimao.com^$important
 ||t-ads.qimao.com^$important
 ||log.qimao.com^$important

@@ -8,10 +8,10 @@ BLACKLIST_FILE = 'iOS-OmniGuard-Blacklist.txt'
 MITM_MODULE_FILE = 'OmniGuard-Predator-MitM.sgmodule'
 README_FILE = 'README.md'
 
-# 严苛模式：404 链接不写入模块
+# 严苛模式：404 链接不写入模块，确保手机端不报红
 STRICT_MODE = True
 
-# === 2026-02-26 路径修正 ===
+# === 2026 最新校对后的绝对路径 (修正 404) ===
 SOURCES = {
     "bili": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/Bilibili.js",
     "youtube": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js",
@@ -21,28 +21,28 @@ SOURCES = {
     "qimao": "https://raw.githubusercontent.com/I-am-R-E/QuantumultX/main/JavaScript/QiMaoXiaoShuo.js"
 }
 
-COMMON_HEADERS = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU OS 17_6 like Mac OS X) AppleWebKit/605.1.15'}
+COMMON_HEADERS = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15'}
 update_logs = []
 
 def check_url(item):
     name, url = item
     try:
-        resp = requests.get(url, headers=COMMON_HEADERS, timeout=10)
+        resp = requests.get(url, headers=COMMON_HEADERS, timeout=12)
         if resp.status_code == 200:
             return name, True
-        update_logs.append(f"❌ {name} 失效 [{resp.status_code}]")
+        update_logs.append(f"❌ {name} 失效 [状态码: {resp.status_code}]")
         return name, False
-    except:
-        update_logs.append(f"⚠️ {name} 超时")
+    except Exception as e:
+        update_logs.append(f"⚠️ {name} 请求超时: {str(e)}")
         return name, False
 
 def process_blacklist():
-    print("⏳ 同步黑名单中...")
+    print("⏳ 正在深度同步黑名单并更新时间戳...")
     try:
-        upstream_resp = requests.get(UPSTREAM_URL, headers=COMMON_HEADERS, timeout=20)
+        upstream_resp = requests.get(UPSTREAM_URL, headers=COMMON_HEADERS, timeout=30)
         upstream_rules = set([l.strip() for l in upstream_resp.text.splitlines() if l.strip() and not l.startswith(('!', '#'))])
     except:
-        update_logs.append("⚠️ 上游规则拉取失败")
+        update_logs.append("⚠️ 无法获取上游 DNS 规则，跳过去重。")
         return
 
     if not os.path.exists(BLACKLIST_FILE): return
@@ -50,47 +50,52 @@ def process_blacklist():
     with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # --- 核心修复：更强的正则匹配更新时间 ---
+    # 获取北京时间
     tz = datetime.timezone(datetime.timedelta(hours=8))
     now = datetime.datetime.now(tz)
-    version_str, time_str = now.strftime("%Y.%m.%d.%H"), now.strftime("%Y-%m-%d %H:%M")
-    
-    # 匹配 ! Version: 或 !Version: 等各种变体
-    content = re.sub(r'(!\s*Version:\s*).*', rf'\g<1>{version_str}', content)
-    content = re.sub(r'(!\s*Updated:\s*).*', rf'\g<1>{time_str}', content)
+    version_str = now.strftime("%Y.%m.%d.%H")
+    time_str = now.strftime("%Y-%m-%d %H:%M")
 
-    # 处理去重逻辑
+    # --- 核心优化：全方位兼容的时间戳替换正则 ---
+    # 匹配 ! Version: 或 !Version 或 !  Version: 并在后方替换
+    content = re.sub(r'(!\s*Version\s*:\s*).*', rf'\g<1>{version_str}', content, flags=re.IGNORECASE)
+    content = re.sub(r'(!\s*Updated\s*:\s*).*', rf'\g<1>{time_str}', content, flags=re.IGNORECASE)
+
+    # 去重逻辑
     lines = content.splitlines()
     new_lines = []
     removed_count = 0
-    special_re = re.compile(r'\$important|##|#%#|@@')
+    # 排除元数据和特殊规则
+    special_re = re.compile(r'\$important|##|#%#|@@|!')
 
     for line in lines:
         stripped = line.strip()
-        if not stripped or stripped.startswith(('!', '[')) or special_re.search(stripped):
-            new_lines.append(line); continue
-        if stripped in upstream_rules:
-            removed_count += 1; continue
+        # 如果是规则行（非元数据、非注释、非高级规则）
+        if stripped and not special_re.search(stripped) and not stripped.startswith('['):
+            if stripped in upstream_rules:
+                removed_count += 1
+                continue
         new_lines.append(line)
 
     with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
         f.write("\n".join(new_lines))
-    if removed_count > 0: update_logs.append(f"🧹 自动剔除重复规则 {removed_count} 条")
+    
+    if removed_count > 0:
+        update_logs.append(f"🧹 自动去重：成功剔除 {removed_count} 条重复规则。")
 
 def generate_mitm_module(health):
-    print("⏳ 生成模块...")
-    s_list = []
-    # 集成逻辑... (此处逻辑同上，已更新链接变量)
-    if health.get("bili"): s_list.append(f'bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll|interface\\.v1\\.Search/Default|resource\\.show\\.v1\\.Tab/GetTabs|account\\.v1\\.Account/Mine)$,requires-body=1,binary-body-mode=1,script-path={SOURCES["bili"]}')
-    if health.get("youtube"): s_list.append(f'youtube.response = type=http-response,pattern=^https://youtubei\\.googleapis\\.com/youtubei/v1/(browse|next|player|search|reel/reel_watch_sequence|guide|account/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SOURCES["youtube"]},argument="{{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true,\\"blockImmersive\\":true,\\"debug\\":false}}"')
-    if health.get("amap"): s_list.append(f'amap_ad = type=http-response,pattern=^https?://.*\\.amap\\.com/ws/(faas/amap-navigation/main-page|valueadded/alimama/splash_screen|msgbox/pull|shield/(shield/dsp/profile/index/nodefaas|search/new_hotword)),requires-body=1,script-path={SOURCES["amap"]}')
-    if health.get("wechat"): s_list.append(f'unblock_wechat = type=http-response,pattern=^https\\:\\/\\/(weixin110\\.qq|security.wechat)\\.com\\/cgi-bin\\/mmspamsupport-bin\\/newredirectconfirmcgi\\?,requires-body=1,max-size=0,script-path={SOURCES["wechat"]},argument="useCache=true&forceRedirect=true"')
-    if health.get("baidu"): s_list.append(f'baidu_cloud = type=http-response,pattern=^https?://pan\\.baidu\\.com/rest/2\\.0/membership/user,requires-body=1,script-path={SOURCES["baidu"]}')
-    if health.get("qimao"): s_list.append(f'qimao_vip = type=http-response,pattern=^https?://(api-\\w+|xiaoshuo)\\.wtzw\\.com/api/v\\d/,requires-body=1,script-path={SOURCES["qimao"]}')
+    print("⏳ 正在重新编译 MitM 模块...")
+    s_entries = []
+    if health.get("bili"): s_entries.append(f'bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll|interface\\.v1\\.Search/Default|resource\\.show\\.v1\\.Tab/GetTabs|account\\.v1\\.Account/Mine)$,requires-body=1,binary-body-mode=1,script-path={SOURCES["bili"]}')
+    if health.get("youtube"): s_entries.append(f'youtube.response = type=http-response,pattern=^https://youtubei\\.googleapis\\.com/youtubei/v1/(browse|next|player|search|reel/reel_watch_sequence|guide|account/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SOURCES["youtube"]},argument="{{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true,\\"blockImmersive\\":true,\\"debug\\":false}}"')
+    if health.get("amap"): s_entries.append(f'amap_ad = type=http-response,pattern=^https?://.*\\.amap\\.com/ws/(faas/amap-navigation/main-page|valueadded/alimama/splash_screen|msgbox/pull|shield/(shield/dsp/profile/index/nodefaas|search/new_hotword)),requires-body=1,script-path={SOURCES["amap"]}')
+    if health.get("wechat"): s_entries.append(f'unblock_wechat = type=http-response,pattern=^https\\:\\/\\/(weixin110\\.qq|security.wechat)\\.com\\/cgi-bin\\/mmspamsupport-bin\\/newredirectconfirmcgi\\?,requires-body=1,max-size=0,script-path={SOURCES["wechat"]},argument="useCache=true&forceRedirect=true"')
+    if health.get("baidu"): s_entries.append(f'baidu_cloud = type=http-response,pattern=^https?://pan\\.baidu\\.com/rest/2\\.0/membership/user,requires-body=1,script-path={SOURCES["baidu"]}')
+    if health.get("qimao"): s_entries.append(f'qimao_vip = type=http-response,pattern=^https?://(api-\\w+|xiaoshuo)\\.wtzw\\.com/api/v\\d/,requires-body=1,script-path={SOURCES["qimao"]}')
 
-    scripts_block = "\n".join(s_list)
+    scripts_block = "\n".join(s_entries)
     module_content = f"""#!name = iOS-OmniGuard Predator-MitM
-#!desc = 状态: {"🟢 正常" if len(s_list)==6 else "🟠 部分异常"} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')}
+#!desc = 状态: {"🟢 正常" if len(s_entries)==6 else "🟠 部分资源下线"} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')} | 请确保开启 MITM over HTTP/2。
 #!category = OmniGuard
 #!system = ios
 
@@ -133,9 +138,8 @@ def update_readme():
     time_str = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).strftime("%Y-%m-%d %H:%M")
     cdn_mitm = f"https://cdn.jsdelivr.net/gh/{REPO_FULL_NAME}@main/{MITM_MODULE_FILE}"
     cdn_dns = f"https://cdn.jsdelivr.net/gh/{REPO_FULL_NAME}@main/{BLACKLIST_FILE}"
-    with open(README_FILE, 'r', encoding='utf-8') as f: content = f.read()
     
-    # README 里的时间更新正则也同步增强
+    with open(README_FILE, 'r', encoding='utf-8') as f: content = f.read()
     content = re.sub(r'(\*\*最后修改时间\*\*：).*', rf'\g<1>{time_str} (GMT+8)', content)
     
     cdn_h = "## 🚀 全自动 CDN 订阅地址"
@@ -148,8 +152,8 @@ def update_readme():
     with open(README_FILE, 'w', encoding='utf-8') as f: f.write(content)
 
 if __name__ == '__main__':
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        health = dict(executor.map(check_url, SOURCES.items()))
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        health_status = dict(executor.map(check_url, SOURCES.items()))
     process_blacklist()
-    generate_mitm_module(health)
+    generate_mitm_module(health_status)
     update_readme()

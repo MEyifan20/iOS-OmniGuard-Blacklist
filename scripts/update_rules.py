@@ -8,10 +8,10 @@ BLACKLIST_FILE = 'iOS-OmniGuard-Blacklist.txt'
 MITM_MODULE_FILE = 'OmniGuard-Predator-MitM.sgmodule'
 README_FILE = 'README.md'
 
-# 严苛模式：404 不写入模块，确保手机端可用
+# 严苛模式：404 不写入模块
 STRICT_MODE = True
 
-# === 2026 最终校对后的绝对路径 (增加缓存刷新参数) ===
+# === 2026 最终校对路径 (修正大小写与层级) ===
 SOURCES = {
     "bili": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/Bilibili.js",
     "youtube": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js",
@@ -26,48 +26,50 @@ update_logs = []
 
 def check_url(item):
     name, url = item
-    # 增加随机数防止 CDN 缓存 404 页面
-    test_url = f"{url}?t={datetime.datetime.now().timestamp()}"
     try:
-        resp = requests.get(test_url, headers=COMMON_HEADERS, timeout=15)
+        # 增加随机参数绕过 GitHub Raw 缓存
+        resp = requests.get(f"{url}?t={datetime.datetime.now().timestamp()}", headers=COMMON_HEADERS, timeout=15)
         if resp.status_code == 200:
             return name, True
         update_logs.append(f"❌ {name} 失效 [HTTP {resp.status_code}]")
         return name, False
-    except Exception as e:
-        update_logs.append(f"⚠️ {name} 超时: {str(e)[:20]}")
+    except:
+        update_logs.append(f"⚠️ {name} 连接超时")
         return name, False
 
 def process_blacklist():
-    print("⏳ 正在深度同步并更新时间戳...")
+    print("⏳ 开始同步黑名单并强制更新元数据...")
     try:
         upstream_resp = requests.get(UPSTREAM_URL, headers=COMMON_HEADERS, timeout=30)
         upstream_rules = set([l.strip() for l in upstream_resp.text.splitlines() if l.strip() and not l.startswith(('!', '#'))])
     except:
-        update_logs.append("⚠️ 上游拉取失败")
-        return
+        update_logs.append("⚠️ 上游拉取失败，跳过去重。")
+        upstream_rules = set()
 
     if not os.path.exists(BLACKLIST_FILE): return
-    with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
-        content = f.read()
 
     # 获取北京时间
     tz = datetime.timezone(datetime.timedelta(hours=8))
     now = datetime.datetime.now(tz)
-    version_str = now.strftime("%Y.%m.%d.%H")
-    time_str = now.strftime("%Y-%m-%d %H:%M")
+    v_str, t_str = now.strftime("%Y.%m.%d.%H"), now.strftime("%Y-%m-%d %H:%M")
 
-    # --- 终极正则：无视空格、无视位置、无视大小写 ---
-    content = re.sub(r'(?i)(!\s*Version\s*:\s*).*', rf'\1{version_str}', content)
-    content = re.sub(r'(?i)(!\s*Updated\s*:\s*).*', rf'\1{time_str}', content)
+    with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
 
-    # 处理去重
-    lines = content.splitlines()
     new_lines = []
     removed_count = 0
-    # 仅对普通的域名规则进行去重，保留元数据和高级规则
+    
     for line in lines:
         stripped = line.strip()
+        # 匹配并替换 Version
+        if re.search(r'!\s*Version\s*:', line, re.I):
+            new_lines.append(f"! Version: {v_str}\n")
+            continue
+        # 匹配并替换 Updated
+        if re.search(r'!\s*Updated\s*:', line, re.I):
+            new_lines.append(f"! Updated: {t_str}\n")
+            continue
+        # 规则去重逻辑 (仅针对普通规则行)
         if stripped and not any(x in stripped for x in ['!', '[', '$', '#', '@']):
             if stripped in upstream_rules:
                 removed_count += 1
@@ -75,23 +77,24 @@ def process_blacklist():
         new_lines.append(line)
 
     with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
-        f.write("\n".join(new_lines))
-    if removed_count > 0: update_logs.append(f"🧹 自动剔除重复规则 {removed_count} 条")
+        f.writelines(new_lines)
+    
+    if removed_count > 0:
+        update_logs.append(f"🧹 自动去重：成功剔除 {removed_count} 条重复规则。")
+    update_logs.append(f"📅 元数据已更新至 {t_str}")
 
 def generate_mitm_module(health):
-    print("⏳ 正在重新编译模块...")
+    print("⏳ 生成集成模块...")
     s_entries = []
-    # 这里的键名必须与 SOURCES 保持一致
     if health.get("bili"): s_entries.append(f'bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll|interface\\.v1\\.Search/Default|resource\\.show\\.v1\\.Tab/GetTabs|account\\.v1\\.Account/Mine)$,requires-body=1,binary-body-mode=1,script-path={SOURCES["bili"]}')
     if health.get("youtube"): s_entries.append(f'youtube.response = type=http-response,pattern=^https://youtubei\\.googleapis\\.com/youtubei/v1/(browse|next|player|search|reel/reel_watch_sequence|guide|account/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SOURCES["youtube"]},argument="{{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true,\\"blockImmersive\\":true,\\"debug\\":false}}"')
     if health.get("amap"): s_entries.append(f'amap_ad = type=http-response,pattern=^https?://.*\\.amap\\.com/ws/(faas/amap-navigation/main-page|valueadded/alimama/splash_screen|msgbox/pull|shield/(shield/dsp/profile/index/nodefaas|search/new_hotword)),requires-body=1,script-path={SOURCES["amap"]}')
-    if health.get("wechat"): s_entries.append(f'unblock_wechat = type=http-response,pattern=^https\\:\\/\\/(weixin110\\.qq|security.wechat)\\.com\\/cgi-bin\\/mmspamsupport-bin\\/newredirectconfirmcgi\\?,requires-body=1,max-size=0,script-path={SOURCES["wechat"]},argument="useCache=true&forceRedirect=true"')
+    if health.get("wechat"): s_entries.append(f'unblock_wechat = type=http-response,pattern=^https\\:\\/\\/(weixin110\\.qq|security.wechat)\\.com\\/cgi-bin\\/mmspamsupport-bin\\/newredirectconfirmcgi\\?,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/UnblockURLinWeChat.js,argument="useCache=true&forceRedirect=true"')
     if health.get("baidu"): s_entries.append(f'baidu_cloud = type=http-response,pattern=^https?://pan\\.baidu\\.com/rest/2\\.0/membership/user,requires-body=1,script-path={SOURCES["baidu"]}')
     if health.get("qimao"): s_entries.append(f'qimao_vip = type=http-response,pattern=^https?://(api-\\w+|xiaoshuo)\\.wtzw\\.com/api/v\\d/,requires-body=1,script-path={SOURCES["qimao"]}')
 
-    valid_count = len(s_entries)
     module_content = f"""#!name = iOS-OmniGuard Predator-MitM
-#!desc = 状态: {"🟢 正常" if valid_count==6 else f"🟠 {valid_count}/6 运行中"} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')} | 4K/倍速/解锁已全集成。
+#!desc = 状态: {"🟢 正常" if len(s_entries)==6 else "🟠 部分失效"} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')}
 #!category = OmniGuard
 #!system = ios
 

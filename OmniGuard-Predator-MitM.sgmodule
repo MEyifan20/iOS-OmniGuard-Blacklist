@@ -1,11 +1,11 @@
 #!name = iOS-OmniGuard Predator-MitM
-#!desc = 状态: 运行中 | 更新: 2026-02-26 22:36
+#!desc = 状态: 运行中 | 更新: 2026-02-26 22:45
 #!category = OmniGuard
 #!system = ios
 
-https://ahrefs.com/writing-tools/paragraph-rewriter
-^https?://.*\.amap\.com/ws/(boss/order_web/\w{8}_information|asa/ads_attribution) _ reject
-^https?://pan\.baidu\.com/act/.+ad_ - reject
+https://www.merriam-webster.com/dictionary/rewrite
+^https?://.*\.amap\.com/ws/(boss/order_web/\w{8}_information|asa/ads_attribution) reject
+^https?://pan\.baidu\.com/act/.+ad_ reject
 
 [Script]
 bili.enhance = type=http-response,pattern=^https://app\.bilibili\.com/bilibili\.app\.(view\.v1\.View/View|dynamic\.v2\.Dynamic/DynAll)$,requires-body=1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/Bilibili.js

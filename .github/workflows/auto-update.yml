@@ -2,7 +2,7 @@ name: OmniGuard Auto Update
 
 on:
   schedule:
-    # 每天北京时间凌晨 04:00 自动运行
+    # 每天北京时间凌晨 04:00 自动运行 (UTC 20:00)
     - cron: '0 20 * * *' 
   workflow_dispatch: # 支持手动点击触发
 
@@ -17,8 +17,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # 如果你遇到推送权限问题，可以取消下面这行的注释
-          # token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -29,9 +27,8 @@ jobs:
         run: pip install requests
 
       - name: Run Auto Update Script
-        # ⚠️ 注意：请确保此处的路径与你仓库中 Python 脚本的实际位置一致
-        # 如果脚本在根目录，直接写 python update.py
-        run: python update.py
+        # ⚠️ 必须与仓库中的文件名大小写完全一致
+        run: python Update_rules.py
 
       - name: Commit and Push Changes
         run: |
@@ -41,7 +38,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes detected. Skipping commit."
           else
-            # 使用包含版本信息的 Commit Message
             git commit -m "🚀 Auto Update: $(date +'%Y-%m-%d %H:%M') [skip ci]"
             git pull --rebase origin main
             git push origin main

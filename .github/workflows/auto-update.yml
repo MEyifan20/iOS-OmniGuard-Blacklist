@@ -28,7 +28,7 @@ jobs:
 
       - name: Run Auto Update Script
         # ⚠️ 必须与仓库中的文件名大小写完全一致
-        run: python Update_rules.py
+        run: python scripts/Update_rules.py
 
       - name: Commit and Push Changes
         run: |

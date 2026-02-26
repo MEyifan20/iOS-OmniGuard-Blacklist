@@ -1,68 +1,43 @@
+# ⚠️ 异常链接: https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/bilibili.enhance.js [404]
+# ⚠️ 异常链接: https://raw.githubusercontent.com/Choler/Surge/master/Script/BaiduCloud.js [404]
 #!name = iOS-OmniGuard Predator-MitM
-#!desc = iOS-OmniGuard-Blacklist 专属配套模块。集成 YouTube 增强及主流 App (优爱腾/B站/知乎/番茄等) 深度去广告。
+#!desc = 集成净化模块 | 状态: 警告: 有 2 个链接异常 | 更新: 02-26 09:57 | 提示: B站/YouTube 需开启 HTTP/2。
 #!category = OmniGuard
-#!author = MEyifan20 & Maasea
-#!homepage = https://github.com/MEyifan20/iOS-OmniGuard-Blacklist
 #!system = ios
 
 [Rule]
-# === YouTube 协议优化 (强制回退 TCP 以确保去广告生效) ===
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN-KEYWORD,youtubei), (PROTOCOL,UDP)),REJECT
+AND,((DOMAIN-SUFFIX,biliapi.net), (PROTOCOL,UDP)),REJECT
+AND,((DOMAIN-SUFFIX,amap.com), (PROTOCOL,UDP)),REJECT
+DOMAIN,p6-ad-sign.byteimg.com,REJECT
+DOMAIN,p9-ad-sign.byteimg.com,REJECT
+DOMAIN-SUFFIX,byteimg.com,DIRECT
+DOMAIN-KEYWORD,zijieapi,REJECT
+DOMAIN-SUFFIX,pglstatp-toutiao.com,REJECT
+IP-CIDR,49.71.37.101/32,REJECT,no-resolve
 
-https://ahrefs.com/writing-tools/paragraph-rewriter
-# === 哔哩哔哩 (Bilibili) 深度去广告 ===
-^https?:\/\/app\.bilibili\.com\/x\/v2\/splash\/list - reject-dict
-^https?:\/\/api\.bilibili\.com\/x\/v2\/splash - reject-dict
-^https?:\/\/api\.bilibili\.com\/x\/v2\/feed\/index\/ads - reject-dict
-^https?:\/\/api\.bilibili\.com\/pgc\/page\/(cinema\/tab\?)?ad - reject-dict
-^https?:\/\/api\.bilibili\.com\/x\/v2\/version - reject-dict
-
-# === 知乎 (Zhihu) 深度去广告 ===
-^https?:\/\/api\.zhihu\.com\/commercial_api\/real_time_zone - reject-dict
-^https?:\/\/api\.zhihu\.com\/topstory\/recommend.*ad_ - reject-dict
-^https?:\/\/api\.zhihu\.com\/moments_v3\?.*ad_ - reject-dict
-
-# === 腾讯视频 (Tencent Video) 去广告增强 ===
-^https?:\/\/btrace\.video\.qq\.com\/kvcollect - reject
-^https?:\/\/info6\.video\.qq\.com\/getinfo\?.*adtype - reject
-^https?:\/\/adsmind\.gdtimg\.com\/.* - reject
-
-# === 爱奇艺 (iQIYI) 深度去广告 ===
-^https?:\/\/t7z\.cupid\.iqiyi\.com\/.* - reject-dict
-^https?:\/\/policy\.video\.iqiyi\.com\/.* - reject-dict
-
-# === 优酷 (Youku) 深度去广告 ===
-^https?:\/\/ad\.api\.3g\.youku\.com\/.* - reject-dict
-^https?:\/\/iyes\.youku\.com\/.* - reject-dict
-
-# === 芒果TV (MangoTV) 深度去广告 ===
-^https?:\/\/mobile\.api\.hunantv\.com\/v1\/ad\/.* - reject-dict
-^https?:\/\/log\.v2\.hunantv\.com\/.* - reject
-
-# === 番茄小说 (Fanqiao) 深度去广告 ===
-^https?:\/\/p\d+-ad-sign\.byteimg\.com\/.* - reject
-^https?:\/\/v\d+-ad\.bytebe\.com\/.* - reject
-
-# === 七猫小说 (Qimao) 深度去广告 ===
-^https?:\/\/api-ks\.qimao\.com\/.* - reject-dict
-^https?:\/\/t-ads\.qimao\.com\/.* - reject-dict
-^https?:\/\/wtw\.qimao\.com\/api\/ad\/.* - reject-dict
-
-# === 小红书 (Xiaohongshu) 净化推荐 ===
-^https?:\/\/edith\.xiaohongshu\.com\/api\/sns\/v\d\/system_service\/splash_config - reject-dict
-
-# === YouTube 广告拦截与重写 ===
-(^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
-^https?:\/\/[\w-]+\.googlevideo\.com\/(?!(dclk_video_ads|videoplayback\?)).+&oad _ reject-200
-^https?:\/\/(www|s)\.youtube\.com\/api\/stats\/ads _ reject-200
-^https?:\/\/(www|s)\.youtube\.com\/(pagead|ptracking) _ reject-200
-^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?adcontext _ reject-200
+https://monica.im/en/tools/rewrite-text
+^https?://.*\.amap\.com/ws/(boss/order_web/\w{8}_information|asa/ads_attribution|shield/scene/recommend) _ reject
+^https?://pan\.baidu\.com/act/.+ad_ - reject
+^https?://api\.zhihu\.com/commercial_api/real_time_zone - reject-dict
+^https?://btrace\.video\.qq\.com/kvcollect - reject
+^https?://t7z\.cupid\.iqiyi\.com/.* - reject-dict
+^https?://edith\.xiaohongshu\.com/api/sns/v\d/system_service/splash_config - reject-dict
+^https?://.+\.pangolin-sdk-toutiao\.com/api/ad/union/sdk/(get_ads|stats/settings)/ - reject
+^https?://api-ks\.qimao\.com/.* - reject-dict
+^https?://wtw\.qimao\.com/api/ad/.* - reject-dict
+(^https?://[\w-]+\.googlevideo\.com/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
+^https?://[\w-]+\.googlevideo\.com/(?!(dclk_video_ads|videoplayback\?)).+&oad _ reject-200
+^https?://s\.youtube\.com/api/stats/qoe\?adcontext _ reject-200
 
 [Script]
-# === YouTube 增强处理 (去广告、翻译、PiP) ===
-youtube.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js,argument="{"lyricLang":"zh-Hans","captionLang":"zh-Hans","blockUpload":true,"blockImmersive":true,"debug":false}"
+bili.enhance = type=http-response,pattern=^https://app\.bilibili\.com/bilibili\.app\.(view\.v1\.View/View|dynamic\.v2\.Dynamic/DynAll|interface\.v1\.Search/Default|resource\.show\.v1\.Tab/GetTabs|account\.v1\.Account/Mine)$,requires-body=1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/bilibili.enhance.js
+youtube.response = type=http-response,pattern=^https://youtubei\.googleapis\.com/youtubei/v1/(browse|next|player|search|reel/reel_watch_sequence|guide|account/get_setting/get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js,argument="{\"lyricLang\":\"zh-Hans\",\"captionLang\":\"zh-Hans\",\"blockUpload\":true,\"blockImmersive\":true,\"debug\":false}"
+amap_ad = type=http-response,pattern=^https?://.*\.amap\.com/ws/(faas/amap-navigation/main-page|valueadded/alimama/splash_screen|msgbox/pull|shield/(shield/dsp/profile/index/nodefaas|search/new_hotword)),requires-body=1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/amap.js
+unblock_wechat = type=http-response,pattern=^https\:\/\/(weixin110\.qq|security.wechat)\.com\/cgi-bin\/mmspamsupport-bin\/newredirectconfirmcgi\?,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/UnblockURLinWeChat.js,argument="useCache=true&forceRedirect=true"
+baidu_cloud = type=http-response,pattern=^https?://pan\.baidu\.com/rest/2\.0/membership/user,requires-body=1,script-path=https://raw.githubusercontent.com/Choler/Surge/master/Script/BaiduCloud.js
+qimao_vip = type=http-response,pattern=^https?://(api-\w+|xiaoshuo)\.wtzw\.com/api/v\d/,requires-body=1,script-path=https://raw.githubusercontent.com/I-am-R-E/QuantumultX/main/JavaScript/QiMaoXiaoShuo.js
 
 [MITM]
-# 域名合并，已排除 googlevideo 的重定向流以节省资源
-hostname = %APPEND% app.bilibili.com, api.bilibili.com, api.zhihu.com, btrace.video.qq.com, info6.video.qq.com, adsmind.gdtimg.com, t7z.cupid.iqiyi.com, policy.video.iqiyi.com, ad.api.3g.youku.com, iyes.youku.com, mobile.api.hunantv.com, log.v2.hunantv.com, *ad-sign.byteimg.com, *ad.bytebe.com, api-ks.qimao.com, t-ads.qimao.com, wtw.qimao.com, edith.xiaohongshu.com, www.youtube.com, s.youtube.com, youtubei.googleapis.com, -*redirector*.googlevideo.com, *.googlevideo.com
+hostname = %APPEND% *amap.com, security.wechat.com, weixin110.qq.com, pan.baidu.com, app.bilibili.com, api.live.bilibili.com, api.vc.bilibili.com, api.bilibili.com, manga.bilibili.com, grpc.biliapi.net, api.biliapi.net, -broadcast.chat.bilibili.com, api.zhihu.com, btrace.video.qq.com, t7z.cupid.iqiyi.com, ad.api.3g.youku.com, *ad-sign.byteimg.com, *ad.bytebe.com, api-ks.qimao.com, wtw.qimao.com, edith.xiaohongshu.com, www.youtube.com, s.youtube.com, youtubei.googleapis.com, -*redirector*.googlevideo.com, *.googlevideo.com, *.wtzw.com, *.pangolin-sdk-toutiao, *.pstatp.com, gurd.snssdk.com

@@ -1,0 +1,87 @@
+[Adblock Plus 2.0]
+! Title: iOS-OmniGuard-Blacklist (Standard Unified Edition)
+! Description: 针对 iOS 环境深度优化的全能黑名单旗舰版。已剔除 adblockdns 冗余项，保留高强度路径拦截与 $important 强制修正规则。
+! Version: 2026.02.26.22
+! Codename: Predator-Standard
+! Updated: 2026-02-26
+! Homepage: https://github.com/MEyifan20/Whitelist
+! License: https://opensource.org/licenses/mit-license.php
+! Changelog: 1. 完成对 217heidai 最新库的物理去重；2. 保留 DNS 库无法实现的路径级/修饰符级高级规则；3. 锁定国内阅读与视频 APP 的关键上报节点。
+! -------------------------------------------------------------------------------------------------------
+
+! === Priority Targets (核心打击与广告分发) ===
+! 此部分包含路径级拦截，DNS 过滤器无法替代
+/googleads.$~script,domain=~googleads.github.io
+/pagead/lvz?
+||google.com/pagead/
+||googleadservices.com^$important
+||googletagservices.com^$important
+||googletagmanager.com^$important
+||google-analytics.com^$important
+||googlesyndication.com^$important
+||doubleclick.net^$important
+||googleads.g.doubleclick.net^
+||adservice.google.com^
+||stats.g.doubleclick.net^
+
+! === YouTube Advanced Shield (YouTube 深度盾牌) ===
+! 利用修饰符精准锁定播放器内部注入，DNS 库无此类细化规则
+||static.doubleclick.net^$domain=youtube.com
+||youtube.com/get_midroll_
+||s.youtube.com^$important,domain=youtube.com
+||youtube.com/api/stats/ads
+||youtube.com/api/stats/qoe
+||youtube.com/api/stats/atr
+||youtube.com/ptracking
+||youtubei.googleapis.com/youtubei/v1/att/get_attestation$domain=youtube.com
+||play.google.com/log$domain=youtube.com
+
+! === Global Ad Networks & Tracking (全球广告网络) ===
+! 针对近期高频活跃的广告节点进行 $important 强化
+||adpushup.com^$important
+||ads.aralego.com^$important
+||data.flurry.com^$important
+||jads.co^$important
+||rtmark.net^$important
+||s3t3d2y7.ackcdn.net^$important
+||static.cdnativepush.com^$important
+||tsyndicate.com^$important
+||wwads.cn^$important
+
+! === CN Essentials: Ad & Tracking (国内大厂广告) ===
+! 针对国内特定 App SDK 的强制压制，确保拦截优先级
+||ad-static-xg.tagtic.cn^$important
+||appd.xinbochegn.com^$important
+||p3-passport.byteacctimg.com^$important
+||yiyi-web.oss-cn-shenzhen.aliyuncs.com^$important
+||pstatp.com^$domain=~tiktok.com
+||ad.toutiao.com^$important
+||dig.bdurl.net^$important
+
+! === Mainstream Video & Media (流媒体与视频专项) ===
+! 针对优爱腾芒/B站的专项日志拦截
+||btrace.video.qq.com^$important
+||info6.video.qq.com^$important
+||oth.eve.mdt.qq.com^$important
+||pgdt.gtimg.cn^$important
+||t7z.cupid.iqiyi.com^$important
+||policy.video.iqiyi.com^$important
+||ad.api.3g.youku.com^$important
+||iyes.youku.com^$important
+||log.v2.hunantv.com^$important
+||mobile.api.hunantv.com/v1/ad/
+||api.bilibili.com/x/ad-control/
+||api.bilibili.com/x/v2/feed/index/ads
+
+! === Reading & Malicious Nodes (阅读 APP 与恶意节点) ===
+! 针对小说/阅读类（七猫、番茄等）及其高危劫持节点
+||api-ks.qimao.com^$important
+||t-ads.qimao.com^$important
+||log.qimao.com^$important
+||p3-ad-sign.byteimg.com^$important
+||v3-ad.bytebe.com^$important
+||i.snssdk.com^$domain=~toutiao.com
+||pl16857950.trustedcpmrevenue.com^$important
+||static.ptoahaistais.com^$important
+||su.tahltanboutell.com^$important
+||super-app.me^$important

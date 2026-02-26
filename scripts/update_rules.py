@@ -29,12 +29,11 @@ NAME_MAP = {
 
 HEADERS = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15'}
 update_logs = []
-failed_modules = [] # 记录失效但保留的模块
+failed_modules = [] 
 
 def check_url(item):
     name, url = item
     try:
-        # 使用毫秒级随机数击穿缓存
         resp = requests.get(f"{url}?v={datetime.datetime.now().microsecond}", headers=HEADERS, timeout=12)
         if resp.status_code == 200 and len(resp.content) > 500:
             return name, True
@@ -69,9 +68,8 @@ def process_blacklist():
         f.writelines(final_lines)
 
 def generate_mitm_module(health):
-    print("⏳ 正在编译模块 (维持稳定模式)...")
-    # 无论健康与否，都生成条目（保持最后版本）
     entries = []
+    # 构造条目
     entries.append(f'bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll|interface\\.v1\\.Search/Default|resource\\.show\\.v1\\.Tab/GetTabs|account\\.v1\\.Account/Mine)$,requires-body=1,binary-body-mode=1,script-path={SOURCES["bili"]}')
     entries.append(f'youtube.response = type=http-response,pattern=^https://youtubei\\.googleapis\\.com/youtubei/v1/(browse|next|player|search|reel/reel_watch_sequence|guide|account/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SOURCES["youtube"]},argument="{{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true,\\"blockImmersive\\":true,\\"debug\\":false}}"')
     entries.append(f'amap_ad = type=http-response,pattern=^https?://.*\\.amap\\.com/ws/(faas/amap-navigation/main-page|valueadded/alimama/splash_screen|msgbox/pull|shield/(shield/dsp/profile/index/nodefaas|search/new_hotword)),requires-body=1,script-path={SOURCES["amap"]}')
@@ -79,11 +77,10 @@ def generate_mitm_module(health):
     entries.append(f'baidu_cloud = type=http-response,pattern=^https?://pan\\.baidu\\.com/rest/2\\.0/membership/user,requires-body=1,script-path={SOURCES["baidu"]}')
     entries.append(f'qimao_vip = type=http-response,pattern=^https?://(api-\\w+|xiaoshuo)\\.wtzw\\.com/api/v\\d/,requires-body=1,script-path={SOURCES["qimao"]}')
 
-    # 描述文字逻辑
     status_desc = "🟢 全量正常" if not failed_modules else f"⚠️ 部分源异常(已冻结): {', '.join(failed_modules)}"
     
     module_head = f"""#!name = iOS-OmniGuard Predator-MitM
-#!desc = {status_desc} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')} | 提示：若源持续失效，请手动检查脚本地址。
+#!desc = {status_desc} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')}
 #!category = OmniGuard
 #!system = ios
 
@@ -125,27 +122,33 @@ def update_readme():
     if not os.path.exists(README_FILE): return
     tz = datetime.timezone(datetime.timedelta(hours=8))
     t_now = datetime.datetime.now(tz).strftime("%Y-%m-%d %H:%M")
+    cdn_m = f"https://cdn.jsdelivr.net/gh/{REPO_FULL_NAME}@main/{MITM_MODULE_FILE}"
+    cdn_d = f"https://cdn.jsdelivr.net/gh/{REPO_FULL_NAME}@main/{BLACKLIST_FILE}"
+
     with open(README_FILE, 'r', encoding='utf-8') as f: content = f.read()
     
+    # 1. 更新 CDN 地址 (修正了之前的变量未定义错误)
+    cdn_h = "## 🚀 全自动 CDN 订阅地址"
+    cdn_b = f"\n{cdn_h}\n- **Predator-MitM 模块**: `{cdn_m}`\n- **DNS 黑名单**: `{cdn_dns if 'cdn_dns' in locals() else cdn_d}`\n"
+    if cdn_h in content:
+        content = re.sub(f"{cdn_h}.*?txt`", cdn_b.strip(), content, flags=re.DOTALL)
+
+    # 2. 更新日志动态
     log_h = "## 📅 最近更新动态"
-    # 构建复杂的错误提示块
-    del_msg = ""
-    if failed_modules:
-        del_msg = f"\n> 🚨 **资源警告**：检测到 `{', '.join(failed_modules)}` 链接不可用。\n> 🛠️ **处理策略**：已为你保留该模块最后的有效版本，请检查上游地址或等待修复。"
-    
+    del_msg = f"\n> 🚨 **资源警告**：检测到 `{', '.join(failed_modules)}` 失效，已保留最后版本。" if failed_modules else ""
     log_b = f"\n{log_h}\n> 更新于: {t_now}{del_msg}\n\n" + "\n".join([f"- {item}" for item in update_logs]) + "\n"
-    
     if log_h in content:
         content = re.sub(f"{log_h}.*?(?=\n##|$)", log_b, content, flags=re.DOTALL)
     
-    new_content = []
+    # 3. 更新最后修改时间
+    new_lines = []
     for line in content.splitlines():
         if '**最后修改时间**：' in line:
-            new_content.append(f"**最后修改时间**：{t_now} (GMT+8)")
+            new_lines.append(f"**最后修改时间**：{t_now} (GMT+8)")
         else:
-            new_content.append(line)
+            new_lines.append(line)
     
-    with open(README_FILE, 'w', encoding='utf-8') as f: f.write("\n".join(new_content))
+    with open(README_FILE, 'w', encoding='utf-8') as f: f.write("\n".join(new_lines))
 
 if __name__ == '__main__':
     with ThreadPoolExecutor(max_workers=6) as executor:

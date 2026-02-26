@@ -55,9 +55,9 @@ def main():
     yt_arg = 'argument="{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true}"'
     
     m = f"#!name = iOS-OmniGuard Predator-MitM\n#!desc = 状态: 运行中 | 更新: {t_str}\n"
-    m += "#!category = OmniGuard\n#!system = ios\n\nhttps://ahrefs.com/writing-tools/paragraph-rewriter\n"
-    m += "^https?://.*\\.amap\\.com/ws/(boss/order_web/\\w{8}_information|asa/ads_attribution) _ reject\n"
-    m += "^https?://pan\\.baidu\\.com/act/.+ad_ - reject\n\n[Script]\n"
+    m += "#!category = OmniGuard\n#!system = ios\n\nhttps://www.merriam-webster.com/dictionary/rewrite\n"
+    m += "^https?://.*\\.amap\\.com/ws/(boss/order_web/\\w{8}_information|asa/ads_attribution) reject\n"
+    m += "^https?://pan\\.baidu\\.com/act/.+ad_ reject\n\n[Script]\n"
     m += f'bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll)$,requires-body=1,binary-body-mode=1,script-path={SOURCES["bili"]}\n'
     m += f'youtube.response = type=http-response,pattern=^https://youtubei\\.googleapis\\.com/youtubei/v1/(browse|next|player),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SOURCES["youtube"]},{yt_arg}\n'
     m += f'baidu_cloud = type=http-response,pattern=^https?://pan\\.baidu\\.com/rest/2\\.0/membership/user,requires-body=1,script-path={SOURCES["baidu"]}\n'
@@ -65,7 +65,7 @@ def main():
 
     with open(MITM_MODULE_FILE, 'w', encoding='utf-8') as f: f.write(m)
 
-    # --- 阶段 D: 更新 README (包含 CDN 地址展示) ---
+    # --- 阶段 D: 更新 README (包含 CDN 地址展示与双重时间戳同步) ---
     if os.path.exists(README_FILE):
         with open(README_FILE, 'r', encoding='utf-8') as f: content = f.read()
         
@@ -75,11 +75,17 @@ def main():
             content = re.sub(r"## 🚀 全自动 CDN 订阅地址.*?txt`", cdn_section, content, flags=re.DOTALL)
         else: content += f"\n\n{cdn_section}"
 
-        # 2. 修改时间与动态日志
+        # 2. 修改时间、版本号与动态日志
         new_md = []
         for rl in content.splitlines():
-            if '**最后修改时间**：' in rl: new_md.append(f"**最后修改时间**：{t_str} (GMT+8)")
-            else: new_md.append(rl)
+            if '**最后修改时间**：' in rl: 
+                new_md.append(f"**最后修改时间**：{t_str} (GMT+8)")
+            elif '! Version:' in rl: 
+                new_md.append(f"! Version: {v_str}")
+            elif '! Updated:' in rl: 
+                new_md.append(f"! Updated: {t_str}")
+            else: 
+                new_md.append(rl)
         
         final_readme = '\n'.join(new_md)
         if '## 📅 最近更新动态' in final_readme:

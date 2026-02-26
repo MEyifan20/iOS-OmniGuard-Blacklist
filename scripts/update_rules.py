@@ -88,5 +88,10 @@ def main():
             
         with open(README_FILE, 'w', encoding='utf-8') as f: f.write(final_readme)
 
+    # --- 阶段 E: 同步物理文件时间戳 (相当于 touch) ---
+    for file_path in [BLACKLIST_FILE, MITM_MODULE_FILE, README_FILE]:
+        if os.path.exists(file_path):
+            os.utime(file_path, None)  # 刷新文件的访问时间和修改时间至当前时间
+
 if __name__ == '__main__':
     main()

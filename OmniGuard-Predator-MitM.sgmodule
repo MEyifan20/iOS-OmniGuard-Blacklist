@@ -1,26 +1,18 @@
 #!name = iOS-OmniGuard Predator-MitM
-#!desc = 状态: 运行中 | 更新: 2026-02-26 23:59
+#!desc = 状态: 运行中 | 更新: 2026-02-27 01:07
 #!category = OmniGuard
 #!system = ios
 
-# === URL Rewrite & Reject ===
 https://www.merriam-webster.com/dictionary/rewrite
-# 高德地图广告拦截
 ^https?://.*\.amap\.com/ws/(boss/order_web/\w{8}_information|asa/ads_attribution) reject
-# 百度网盘活动广告拦截
 ^https?://pan\.baidu\.com/act/.+ad_ reject
-# 新增：番茄小说/畅听穿山甲 SDK 及字节动态配置拦截
 ^https?://.+\.pangolin-sdk-toutiao\.com/api/ad/union/sdk/(get_ads|stats|settings)/ reject
 ^https?://gurd\.snssdk\.com/src/server/v3/package reject
 
 [Script]
-# Bilibili 净化 (Maasea)
 bili.enhance = type=http-response,pattern=^https://app\.bilibili\.com/bilibili\.app\.(view\.v1\.View/View|dynamic\.v2\.Dynamic/DynAll)$,requires-body=1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/Bilibili.js
-# YouTube 净化及双语字幕 (Maasea)
 youtube.response = type=http-response,pattern=^https://youtubei\.googleapis\.com/youtubei/v1/(browse|next|player),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js,argument="{\"lyricLang\":\"zh-Hans\",\"captionLang\":\"zh-Hans\",\"blockUpload\":true}"
-# 百度网盘功能增强 (Choler)
 baidu_cloud = type=http-response,pattern=^https?://pan\.baidu\.com/rest/2\.0/membership/user,requires-body=1,script-path=https://raw.githubusercontent.com/Choler/Surge/master/Script/BaiduCloud.js
 
 [MITM]
-# 补全了番茄系及字节广告素材所需的域名解密
 hostname = %APPEND% *amap.com, pan.baidu.com, app.bilibili.com, *.googlevideo.com, youtubei.googleapis.com, *.pangolin-sdk-toutiao.com, *.pstatp.com, gurd.snssdk.com

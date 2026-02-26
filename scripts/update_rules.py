@@ -44,21 +44,31 @@ def main():
     # --- 阶段 B: 资源探测 ---
     for name, url in SOURCES.items():
         try:
-            r = requests.get(url, timeout=10) # 略微增加超时时间
+            r = requests.get(url, timeout=10)
             if r.status_code == 200: status_logs.append(f"✅ {name} 正常")
             else: status_logs.append(f"🚨 {name} 失效({r.status_code})")
         except: status_logs.append(f"⚠️ {name} 超时")
+    
+    # 手动添加番茄系规则集成状态（因其为内置 Reject 规则，非外部脚本）
+    status_logs.append("✅ fanqie 规则已集成")
 
-    # --- 阶段 C: 构造全量模块 ---
+    # --- 阶段 C: 构造全量模块 (集成番茄系规则) ---
     yt_arg = 'argument="{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true}"'
+    
     m = f"#!name = iOS-OmniGuard Predator-MitM\n#!desc = 状态: 运行中 | 更新: {t_str}\n"
-    m += "#!category = OmniGuard\n#!system = ios\n\nhttps://www.merriam-webster.com/dictionary/rewrite\n"
+    m += "#!category = OmniGuard\n#!system = ios\n\n"
+    m += "https://www.merriam-webster.com/dictionary/rewrite\n"
     m += "^https?://.*\\.amap\\.com/ws/(boss/order_web/\\w{8}_information|asa/ads_attribution) reject\n"
-    m += "^https?://pan\\.baidu\\.com/act/.+ad_ reject\n\n[Script]\n"
+    m += "^https?://pan\\.baidu\\.com/act/.+ad_ reject\n"
+    m += "^https?://.+\\.pangolin-sdk-toutiao\\.com/api/ad/union/sdk/(get_ads|stats|settings)/ reject\n"
+    m += "^https?://gurd\\.snssdk\\.com/src/server/v3/package reject\n\n"
+    
+    m += "[Script]\n"
     m += f'bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll)$,requires-body=1,binary-body-mode=1,script-path={SOURCES["bili"]}\n'
     m += f'youtube.response = type=http-response,pattern=^https://youtubei\\.googleapis\\.com/youtubei/v1/(browse|next|player),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SOURCES["youtube"]},{yt_arg}\n'
     m += f'baidu_cloud = type=http-response,pattern=^https?://pan\\.baidu\\.com/rest/2\\.0/membership/user,requires-body=1,script-path={SOURCES["baidu"]}\n'
-    m += f'\n[MITM]\nhostname = %APPEND% *amap.com, pan.baidu.com, app.bilibili.com, *.googlevideo.com, youtubei.googleapis.com\n'
+    
+    m += f'\n[MITM]\nhostname = %APPEND% *amap.com, pan.baidu.com, app.bilibili.com, *.googlevideo.com, youtubei.googleapis.com, *.pangolin-sdk-toutiao.com, *.pstatp.com, gurd.snssdk.com\n'
 
     with open(MITM_MODULE_FILE, 'w', encoding='utf-8') as f: f.write(m)
 
@@ -66,7 +76,6 @@ def main():
     if os.path.exists(README_FILE):
         with open(README_FILE, 'r', encoding='utf-8') as f: content = f.read()
         
-        # 1. 修改全局时间戳与版本号 (不依赖正则，使用替换)
         lines = content.splitlines()
         new_lines = []
         for line in lines:
@@ -80,18 +89,14 @@ def main():
                 new_lines.append(line)
         content = '\n'.join(new_lines)
 
-        # 2. 更新“最近更新动态” (增加安全判断)
         log_block = f"## 📅 最近更新动态\n> 更新于: {t_str}\n" + '\n'.join([f"- {s}" for s in status_logs])
         if "## 📅 最近更新动态" in content:
-            # 匹配从标题到下一个标题（或末尾）的部分进行替换
             content = re.sub(r"## 📅 最近更新动态.*?(?=\n##|$)", log_block, content, flags=re.DOTALL)
         else:
-            # 如果不存在，则在倒数第二行（页脚前）插入
-            content = content.replace("---", f"---\n\n{log_block}\n\n---", 1)
+            content = content.replace("\n---", f"\n\n{log_block}\n\n---", 1)
 
         with open(README_FILE, 'w', encoding='utf-8') as f: f.write(content)
 
-    # --- 阶段 E: 刷新时间戳 ---
     for file_path in [BLACKLIST_FILE, MITM_MODULE_FILE, README_FILE]:
         if os.path.exists(file_path):
             os.utime(file_path, None)

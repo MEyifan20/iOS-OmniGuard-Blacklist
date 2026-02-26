@@ -3,22 +3,25 @@
 [Adblock Plus 2.0]
 ! Title: iOS-OmniGuard-Blacklist (Standard Unified Edition)
 ! Description: 针对 iOS 环境深度优化的全能黑名单旗舰版。采用去重增强架构，精准锁定 Google、YouTube 及国内主流视频/阅读 APP，与 Whitelist 实现 100% 逻辑闭环。
-! Version: 2026.02.26.22
+! Version: 2026.02.26.21
 ! Codename: Predator-Standard
-! Updated: 2026-02-26
+! Updated: 2026-02-26 01:08
 ! -------------------------------------------------------------------------------------------------------
 
 ## 📖 项目简介
-**iOS-OmniGuard-Blacklist** 是专为 iOS 高级用户打造的“去重增强型”拦截方案。本方案不以域名数量取胜，而是通过高强度的 `$important` 标签和 DNS 库无法实现的**路径级规则**，对顽固广告进行精准剥离。
+**iOS-OmniGuard-Blacklist** 是专为 iOS 高级用户打造的“去重增强型”拦截方案。本方案不以域名数量取胜，而是通过高强度的 $important 标签和 DNS 库无法实现的路径级规则，对顽固广告进行精准剥离。
 
-本库已完成对 **[iOS-OmniGuard-Whitelist](https://github.com/MEyifan20/Whitelist)** 的全量冲突校验，并针对全球最大规则集 `217heidai/adblockdns` 完成了物理去重，确保系统资源占用极低。
+本库已完成对 iOS-OmniGuard-Whitelist 的全量冲突校验，并针对全球最大规则集 217heidai/adblockdns 完成了物理去重，确保系统资源占用极低。
 
 ---
 
 ## 🚀 订阅指引
-建议在 **AdGuard Pro / Shadowrocket** 中添加以下订阅地址：
+建议在 AdGuard Pro / Shadowrocket 中添加以下订阅地址：
 
-订阅链接:
+[ jsDelivr CDN 加速 (推荐国内直连) ]
+https://cdn.jsdelivr.net/gh/MEyifan20/Whitelist@main/iOS-OmniGuard-Blacklist.txt
+
+[ GitHub 原生地址 ]
 https://raw.githubusercontent.com/MEyifan20/Whitelist/main/iOS-OmniGuard-Blacklist.txt
 
 ---

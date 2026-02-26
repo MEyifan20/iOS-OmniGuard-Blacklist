@@ -1,41 +1,20 @@
 #!name = iOS-OmniGuard Predator-MitM
-#!desc = 状态: 🟢 正常 | 更新: 2026-02-26 20:00
+#!desc = 状态: 运行中 | 更新: 2026-02-26 20:38 | 包含冻结保护机制
 #!category = OmniGuard
 #!system = ios
 
-[Rule]
-AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
-AND,((DOMAIN-KEYWORD,youtubei), (PROTOCOL,UDP)),REJECT
-AND,((DOMAIN-SUFFIX,biliapi.net), (PROTOCOL,UDP)),REJECT
-AND,((DOMAIN-SUFFIX,amap.com), (PROTOCOL,UDP)),REJECT
-DOMAIN,p6-ad-sign.byteimg.com,REJECT
-DOMAIN,p9-ad-sign.byteimg.com,REJECT
-DOMAIN-SUFFIX,byteimg.com,DIRECT
-DOMAIN-KEYWORD,zijieapi,REJECT
-DOMAIN-SUFFIX,pglstatp-toutiao.com,REJECT
-IP-CIDR,49.71.37.101/32,REJECT,no-resolve
-
-https://ahrefs.com/writing-tools/paragraph-rewriter
-^https?://.*\.amap\.com/ws/(boss/order_web/\w{{8}}_information|asa/ads_attribution|shield/scene/recommend) _ reject
+https://monica.im/en/tools/rewrite-text
+^https?://.*\.amap\.com/ws/(boss/order_web/\w{8}_information|asa/ads_attribution|shield/scene/recommend) _ reject
 ^https?://pan\.baidu\.com/act/.+ad_ - reject
-^https?://api\.zhihu\.com/commercial_api/real_time_zone - reject-dict
-^https?://btrace\.video\.qq\.com/kvcollect - reject
-^https?://t7z\.cupid\.iqiyi\.com/.* - reject-dict
-^https?://edith\.xiaohongshu\.com/api/sns/v\d/system_service/splash_config - reject-dict
-^https?://.+\.pangolin-sdk-toutiao\.com/api/ad/union/sdk/(get_ads|stats/settings)/ - reject
 ^https?://api-ks\.qimao\.com/.* - reject-dict
-^https?://wtw\.qimao\.com/api/ad/.* - reject-dict
-(^https?://[\w-]+\.googlevideo\.com/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
-^https?://[\w-]+\.googlevideo\.com/(?!(dclk_video_ads|videoplayback\?)).+&oad _ reject-200
-^https?://s\.youtube\.com/api/stats/qoe\?adcontext _ reject-200
 
 [Script]
 bili.enhance = type=http-response,pattern=^https://app\.bilibili\.com/bilibili\.app\.(view\.v1\.View/View|dynamic\.v2\.Dynamic/DynAll|interface\.v1\.Search/Default|resource\.show\.v1\.Tab/GetTabs|account\.v1\.Account/Mine)$,requires-body=1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/Bilibili.js
-youtube.response = type=http-response,pattern=^https://youtubei\.googleapis\.com/youtubei/v1/(browse|next|player|search|reel/reel_watch_sequence|guide|account/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js,argument="{\"lyricLang\":\"zh-Hans\",\"captionLang\":\"zh-Hans\",\"blockUpload\":true,\"blockImmersive\":true,\"debug\":false}"
+youtube.response = type=http-response,pattern=^https://youtubei\.googleapis\.com/youtubei/v1/(browse|next|player|search|reel/reel_watch_sequence|guide|account/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js,argument="{\"lyricLang\":\"zh-Hans\",\"captionLang\":\"zh-Hans\",\"blockUpload\":true}"
 amap_ad = type=http-response,pattern=^https?://.*\.amap\.com/ws/(faas/amap-navigation/main-page|valueadded/alimama/splash_screen|msgbox/pull|shield/(shield/dsp/profile/index/nodefaas|search/new_hotword)),requires-body=1,script-path=https://raw.githubusercontent.com/ddgksf2013/Scripts/master/amap.js
-unblock_wechat = type=http-response,pattern=^https\:\/\/(weixin110\.qq|security.wechat)\.com\/cgi-bin\/mmspamsupport-bin\/newredirectconfirmcgi\?,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/UnblockURLinWeChat.js,argument="useCache=true&forceRedirect=true"
+wechat_unblock = type=http-response,pattern=^https\:\/\/(weixin110\.qq|security.wechat)\.com,requires-body=1,script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/UnblockURLinWeChat.js
 baidu_cloud = type=http-response,pattern=^https?://pan\.baidu\.com/rest/2\.0/membership/user,requires-body=1,script-path=https://raw.githubusercontent.com/Choler/Surge/master/Script/BaiduCloud.js
 qimao_vip = type=http-response,pattern=^https?://(api-\w+|xiaoshuo)\.wtzw\.com/api/v\d/,requires-body=1,script-path=https://raw.githubusercontent.com/I-am-R-E/QuantumultX/main/JavaScript/QiMaoXiaoShuo.js
 
 [MITM]
-hostname = %APPEND% *amap.com, security.wechat.com, weixin110.qq.com, pan.baidu.com, app.bilibili.com, api.live.bilibili.com, api.vc.bilibili.com, api.bilibili.com, manga.bilibili.com, grpc.biliapi.net, api.biliapi.net, -broadcast.chat.bilibili.com, api.zhihu.com, btrace.video.qq.com, t7z.cupid.iqiyi.com, ad.api.3g.youku.com, *ad-sign.byteimg.com, *ad.bytebe.com, api-ks.qimao.com, wtw.qimao.com, edith.xiaohongshu.com, www.youtube.com, s.youtube.com, youtubei.googleapis.com, -*redirector*.googlevideo.com, *.googlevideo.com, *.wtzw.com, *.pangolin-sdk-toutiao, *.pstatp.com, gurd.snssdk.com
+hostname = %APPEND% *amap.com, security.wechat.com, pan.baidu.com, app.bilibili.com, *.googlevideo.com, youtubei.googleapis.com, *.wtzw.com

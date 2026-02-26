@@ -93,7 +93,7 @@ $$Block \cap \{Ad, Tracker, Hijack\} \setminus \{Core\_Service\} = \emptyset$$
 ---
 **iOS-OmniGuard-Blacklist** · 愿你的网络环境干净且自由。
 
-**最后修改时间**：2026-02-26 20:00 (GMT+8)
+**最后修改时间**：2026-02-26 20:38 (GMT+8)
 
 ---
 **Maintained by**: [MEyifan20](https://github.com/MEyifan20)  
@@ -108,9 +108,10 @@ $$Block \cap \{Ad, Tracker, Hijack\} \setminus \{Core\_Service\} = \emptyset$$
 
 
 ## 📅 最近更新动态
-> 更新于: 2026-02-26 19:14
-
-- ❌ baidu 失效 [HTTP 404]
-- ❌ bili 失效 [HTTP 404]
-- 📅 黑名单时间戳已刷新至 2026-02-26 19:14
-
+> 更新于: 2026-02-26 20:38
+- 🚨 bili 失效(404)，已冻结旧版
+- ✅ youtube 同步成功
+- ✅ amap 同步成功
+- ✅ wechat 同步成功
+- 🚨 baidu 失效(404)，已冻结旧版
+- ✅ qimao 同步成功

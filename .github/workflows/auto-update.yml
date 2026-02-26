@@ -1,0 +1,30 @@
+name: OmniGuard Auto Update
+
+on:
+  schedule:
+    # 每天北京时间凌晨 4:00 自动执行 (对应 UTC 时间 20:00)
+    - cron: '0 20 * * *'
+  workflow_dispatch: # 允许在 GitHub 仓库的 Actions 页面手动点击运行
+
+jobs:
+  update-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Run Auto Update Script
+        run: python scripts/update_rules.py
+
+      - name: Commit and Push Changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "🚀 Auto Update: Sync version and timestamp" || echo "No changes to commit"
+          git push

@@ -20,11 +20,11 @@ CDN_MODULE = f"https://cdn.jsdelivr.net/gh/{USER}/{REPO}@main/OmniGuard-Predator
 CDN_BLACKLIST = f"https://cdn.jsdelivr.net/gh/{USER}/{REPO}@main/iOS-OmniGuard-Blacklist.txt"
 
 SOURCES = {
-    "bili": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/Bilibili.js",
+    "bili": "https://raw.githubusercontent.com/app2smile/rules/master/js/bilibili-proto.js",
     "youtube": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js",
     "amap": "https://raw.githubusercontent.com/ddgksf2013/Scripts/master/amap.js",
     "wechat": "https://raw.githubusercontent.com/zZPiglet/Task/master/asset/UnblockURLinWeChat.js",
-    "baidu": "https://raw.githubusercontent.com/Choler/Surge/master/Script/BaiduCloud.js",
+    "baidu": "https://raw.githubusercontent.com/NobyDa/Script/master/Surge/JS/BaiduCloud.js",
     "qimao": "https://raw.githubusercontent.com/I-am-R-E/QuantumultX/main/JavaScript/QiMaoXiaoShuo.js"
 }
 
@@ -54,23 +54,29 @@ def main():
     
     status_logs.append("✅ fanqie 规则已集成")
 
-    # --- 阶段 C: 构造全量模块 (集成番茄系规则) ---
+    # --- 阶段 C: 构造全量模块 (集成优化后的规则) ---
     yt_arg = r'argument="{\"lyricLang\":\"zh-Hans\",\"captionLang\":\"zh-Hans\",\"blockUpload\":true}"'
     
-    m = f"#!name = iOS-OmniGuard Predator-MitM\n#!desc = 状态: 运行中 | 更新: {t_str}\n"
+    m = f"#!name = iOS-OmniGuard Predator-MitM\n#!desc = 状态: 运行中 | 更新: {t_str} | 已修复失效链接\n"
     m += "#!category = OmniGuard\n#!system = ios\n\n"
-    m += "https://www.merriam-webster.com/dictionary/rewrite\n"
+    
+    # 补充一些通用的、容易失效的广告重定向/屏蔽
+    m += "https://ahrefs.com/writing-tools/paragraph-rewriter\n"
     m += r"^https?://.*\.amap\.com/ws/(boss/order_web/\w{8}_information|asa/ads_attribution) reject" + "\n"
     m += r"^https?://pan\.baidu\.com/act/.+ad_ reject" + "\n"
+    # 增强：针对字节跳动（穿山甲）广告 SDK 的更广匹配
+    m += r"^https?://.+\.pangle\.io/api/ad/union/sdk/ reject" + "\n"
     m += r"^https?://.+\.pangolin-sdk-toutiao\.com/api/ad/union/sdk/(get_ads|stats|settings)/ reject" + "\n"
     m += r"^https?://gurd\.snssdk\.com/src/server/v3/package reject" + "\n\n"
     
     m += "[Script]\n"
+    # 核心脚本：使用已修复的稳定源
     m += f'bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll)$,requires-body=1,binary-body-mode=1,script-path={SOURCES["bili"]}\n'
     m += f'youtube.response = type=http-response,pattern=^https://youtubei\\.googleapis\\.com/youtubei/v1/(browse|next|player),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SOURCES["youtube"]},{yt_arg}\n'
     m += f'baidu_cloud = type=http-response,pattern=^https?://pan\\.baidu\\.com/rest/2\\.0/membership/user,requires-body=1,script-path={SOURCES["baidu"]}\n'
     
-    m += f'\n[MITM]\nhostname = %APPEND% *amap.com, pan.baidu.com, app.bilibili.com, *.googlevideo.com, youtubei.googleapis.com, *.pangolin-sdk-toutiao.com, *.pstatp.com, gurd.snssdk.com\n'
+    # 增强 MITM 列表，确保所有解密域名都包含
+    m += f'\n[MITM]\nhostname = %APPEND% *amap.com, pan.baidu.com, app.bilibili.com, *.googlevideo.com, youtubei.googleapis.com, *.pangolin-sdk-toutiao.com, *.pangle.io, *.pstatp.com, gurd.snssdk.com\n'
 
     with open(MITM_MODULE_FILE, 'w', encoding='utf-8') as f: f.write(m)
 

@@ -8,10 +8,10 @@ BLACKLIST_FILE = 'iOS-OmniGuard-Blacklist.txt'
 MITM_MODULE_FILE = 'OmniGuard-Predator-MitM.sgmodule'
 README_FILE = 'README.md'
 
-# 严苛模式：404 链接不写入模块，确保手机端不报红
+# 严苛模式：404 不写入模块，确保手机端可用
 STRICT_MODE = True
 
-# === 2026 最新校对后的绝对路径 (修正 404) ===
+# === 2026 最终校对后的绝对路径 (增加缓存刷新参数) ===
 SOURCES = {
     "bili": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/Bilibili.js",
     "youtube": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js",
@@ -21,32 +21,33 @@ SOURCES = {
     "qimao": "https://raw.githubusercontent.com/I-am-R-E/QuantumultX/main/JavaScript/QiMaoXiaoShuo.js"
 }
 
-COMMON_HEADERS = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15'}
+COMMON_HEADERS = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU OS 17_6 like Mac OS X) AppleWebKit/605.1.15'}
 update_logs = []
 
 def check_url(item):
     name, url = item
+    # 增加随机数防止 CDN 缓存 404 页面
+    test_url = f"{url}?t={datetime.datetime.now().timestamp()}"
     try:
-        resp = requests.get(url, headers=COMMON_HEADERS, timeout=12)
+        resp = requests.get(test_url, headers=COMMON_HEADERS, timeout=15)
         if resp.status_code == 200:
             return name, True
-        update_logs.append(f"❌ {name} 失效 [状态码: {resp.status_code}]")
+        update_logs.append(f"❌ {name} 失效 [HTTP {resp.status_code}]")
         return name, False
     except Exception as e:
-        update_logs.append(f"⚠️ {name} 请求超时: {str(e)}")
+        update_logs.append(f"⚠️ {name} 超时: {str(e)[:20]}")
         return name, False
 
 def process_blacklist():
-    print("⏳ 正在深度同步黑名单并更新时间戳...")
+    print("⏳ 正在深度同步并更新时间戳...")
     try:
         upstream_resp = requests.get(UPSTREAM_URL, headers=COMMON_HEADERS, timeout=30)
         upstream_rules = set([l.strip() for l in upstream_resp.text.splitlines() if l.strip() and not l.startswith(('!', '#'))])
     except:
-        update_logs.append("⚠️ 无法获取上游 DNS 规则，跳过去重。")
+        update_logs.append("⚠️ 上游拉取失败")
         return
 
     if not os.path.exists(BLACKLIST_FILE): return
-
     with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
         content = f.read()
 
@@ -56,22 +57,18 @@ def process_blacklist():
     version_str = now.strftime("%Y.%m.%d.%H")
     time_str = now.strftime("%Y-%m-%d %H:%M")
 
-    # --- 核心优化：全方位兼容的时间戳替换正则 ---
-    # 匹配 ! Version: 或 !Version 或 !  Version: 并在后方替换
-    content = re.sub(r'(!\s*Version\s*:\s*).*', rf'\g<1>{version_str}', content, flags=re.IGNORECASE)
-    content = re.sub(r'(!\s*Updated\s*:\s*).*', rf'\g<1>{time_str}', content, flags=re.IGNORECASE)
+    # --- 终极正则：无视空格、无视位置、无视大小写 ---
+    content = re.sub(r'(?i)(!\s*Version\s*:\s*).*', rf'\1{version_str}', content)
+    content = re.sub(r'(?i)(!\s*Updated\s*:\s*).*', rf'\1{time_str}', content)
 
-    # 去重逻辑
+    # 处理去重
     lines = content.splitlines()
     new_lines = []
     removed_count = 0
-    # 排除元数据和特殊规则
-    special_re = re.compile(r'\$important|##|#%#|@@|!')
-
+    # 仅对普通的域名规则进行去重，保留元数据和高级规则
     for line in lines:
         stripped = line.strip()
-        # 如果是规则行（非元数据、非注释、非高级规则）
-        if stripped and not special_re.search(stripped) and not stripped.startswith('['):
+        if stripped and not any(x in stripped for x in ['!', '[', '$', '#', '@']):
             if stripped in upstream_rules:
                 removed_count += 1
                 continue
@@ -79,13 +76,12 @@ def process_blacklist():
 
     with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
         f.write("\n".join(new_lines))
-    
-    if removed_count > 0:
-        update_logs.append(f"🧹 自动去重：成功剔除 {removed_count} 条重复规则。")
+    if removed_count > 0: update_logs.append(f"🧹 自动剔除重复规则 {removed_count} 条")
 
 def generate_mitm_module(health):
-    print("⏳ 正在重新编译 MitM 模块...")
+    print("⏳ 正在重新编译模块...")
     s_entries = []
+    # 这里的键名必须与 SOURCES 保持一致
     if health.get("bili"): s_entries.append(f'bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll|interface\\.v1\\.Search/Default|resource\\.show\\.v1\\.Tab/GetTabs|account\\.v1\\.Account/Mine)$,requires-body=1,binary-body-mode=1,script-path={SOURCES["bili"]}')
     if health.get("youtube"): s_entries.append(f'youtube.response = type=http-response,pattern=^https://youtubei\\.googleapis\\.com/youtubei/v1/(browse|next|player|search|reel/reel_watch_sequence|guide|account/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SOURCES["youtube"]},argument="{{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true,\\"blockImmersive\\":true,\\"debug\\":false}}"')
     if health.get("amap"): s_entries.append(f'amap_ad = type=http-response,pattern=^https?://.*\\.amap\\.com/ws/(faas/amap-navigation/main-page|valueadded/alimama/splash_screen|msgbox/pull|shield/(shield/dsp/profile/index/nodefaas|search/new_hotword)),requires-body=1,script-path={SOURCES["amap"]}')
@@ -93,9 +89,9 @@ def generate_mitm_module(health):
     if health.get("baidu"): s_entries.append(f'baidu_cloud = type=http-response,pattern=^https?://pan\\.baidu\\.com/rest/2\\.0/membership/user,requires-body=1,script-path={SOURCES["baidu"]}')
     if health.get("qimao"): s_entries.append(f'qimao_vip = type=http-response,pattern=^https?://(api-\\w+|xiaoshuo)\\.wtzw\\.com/api/v\\d/,requires-body=1,script-path={SOURCES["qimao"]}')
 
-    scripts_block = "\n".join(s_entries)
+    valid_count = len(s_entries)
     module_content = f"""#!name = iOS-OmniGuard Predator-MitM
-#!desc = 状态: {"🟢 正常" if len(s_entries)==6 else "🟠 部分资源下线"} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')} | 请确保开启 MITM over HTTP/2。
+#!desc = 状态: {"🟢 正常" if valid_count==6 else f"🟠 {valid_count}/6 运行中"} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')} | 4K/倍速/解锁已全集成。
 #!category = OmniGuard
 #!system = ios
 
@@ -126,7 +122,7 @@ https://ahrefs.com/writing-tools/paragraph-rewriter
 ^https?://s\\.youtube\\.com/api/stats/qoe\\?adcontext _ reject-200
 
 [Script]
-{scripts_block}
+{"\n".join(s_entries)}
 
 [MITM]
 hostname = %APPEND% *amap.com, security.wechat.com, weixin110.qq.com, pan.baidu.com, app.bilibili.com, api.live.bilibili.com, api.vc.bilibili.com, api.bilibili.com, manga.bilibili.com, grpc.biliapi.net, api.biliapi.net, -broadcast.chat.bilibili.com, api.zhihu.com, btrace.video.qq.com, t7z.cupid.iqiyi.com, ad.api.3g.youku.com, *ad-sign.byteimg.com, *ad.bytebe.com, api-ks.qimao.com, wtw.qimao.com, edith.xiaohongshu.com, www.youtube.com, s.youtube.com, youtubei.googleapis.com, -*redirector*.googlevideo.com, *.googlevideo.com, *.wtzw.com, *.pangolin-sdk-toutiao, *.pstatp.com, gurd.snssdk.com
@@ -140,7 +136,7 @@ def update_readme():
     cdn_dns = f"https://cdn.jsdelivr.net/gh/{REPO_FULL_NAME}@main/{BLACKLIST_FILE}"
     
     with open(README_FILE, 'r', encoding='utf-8') as f: content = f.read()
-    content = re.sub(r'(\*\*最后修改时间\*\*：).*', rf'\g<1>{time_str} (GMT+8)', content)
+    content = re.sub(r'(?i)(\*\*最后修改时间\*\*：).*', rf'\1{time_str} (GMT+8)', content)
     
     cdn_h = "## 🚀 全自动 CDN 订阅地址"
     cdn_b = f"\n{cdn_h}\n- **Predator-MitM 模块**: `{cdn_mitm}`\n- **DNS 黑名单**: `{cdn_dns}`\n"

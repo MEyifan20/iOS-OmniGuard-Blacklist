@@ -4,15 +4,15 @@
 ! Version: 2026.02.26.23
 ! Codename: Predator-Standard
 ! Updated: 2026-02-26 23:59
-! Homepage: [https://github.com/MEyifan20/iOS-OmniGuard-Blacklist](https://github.com/MEyifan20/iOS-OmniGuard-Blacklist)
-! License: [https://opensource.org/licenses/mit-license.php](https://opensource.org/licenses/mit-license.php)
-! Changelog: 1. 修正规则格式去除幽灵符号；2. 部署 Advanced Scriptlets 实现 YouTube 参数重写与全局反反广告检测；3. 部署 Cosmetic Filtering。
+! Homepage: https://github.com/MEyifan20/iOS-OmniGuard-Blacklist
+! License: https://opensource.org/licenses/mit-license.php
+! Changelog: 1. 集成番茄小说/畅听专项规则；2. 强化穿山甲 SDK 拦截；3. 优化字节系广告分发节点。
 ! -------------------------------------------------------------------------------------------------------
 
 ! === Priority Targets (核心打击与广告分发) ===
 /googleads.$~script,domain=~googleads.github.io
 /pagead/lvz?
-||[google.com/pagead/](https://google.com/pagead/)
+||google.com/pagead/
 ||googleadservices.com^$important
 ||googletagservices.com^$important
 ||googletagmanager.com^$important
@@ -25,14 +25,14 @@
 
 ! === YouTube Advanced Shield (YouTube 深度盾牌) ===
 ||static.doubleclick.net^$domain=youtube.com
-||[youtube.com/get_midroll](https://youtube.com/get_midroll)_
+||youtube.com/get_midroll_
 ||s.youtube.com^$important,domain=youtube.com
-||[youtube.com/api/stats/ads](https://youtube.com/api/stats/ads)
-||[youtube.com/api/stats/qoe](https://youtube.com/api/stats/qoe)
-||[youtube.com/api/stats/atr](https://youtube.com/api/stats/atr)
-||[youtube.com/ptracking](https://youtube.com/ptracking)
-||[youtubei.googleapis.com/youtubei/v1/att/get_attestation$domain=youtube.com](https://youtubei.googleapis.com/youtubei/v1/att/get_attestation$domain=youtube.com)
-||[play.google.com/log$domain=youtube.com](https://play.google.com/log$domain=youtube.com)
+||youtube.com/api/stats/ads
+||youtube.com/api/stats/qoe
+||youtube.com/api/stats/atr
+||youtube.com/ptracking
+||youtubei.googleapis.com/youtubei/v1/att/get_attestation$domain=youtube.com
+||play.google.com/log$domain=youtube.com
 
 ! === Global Ad Networks & Tracking (全球广告网络) ===
 ||adpushup.com^$important
@@ -64,24 +64,29 @@
 ||ad.api.3g.youku.com^$important
 ||iyes.youku.com^$important
 ||log.v2.hunantv.com^$important
-||[mobile.api.hunantv.com/v1/ad/](https://mobile.api.hunantv.com/v1/ad/)
-||[api.bilibili.com/x/ad-control/](https://api.bilibili.com/x/ad-control/)
-||[api.bilibili.com/x/v2/feed/index/ads](https://api.bilibili.com/x/v2/feed/index/ads)
+||mobile.api.hunantv.com/v1/ad/
+||api.bilibili.com/x/ad-control/
+||api.bilibili.com/x/v2/feed/index/ads
 
-! === Reading & Malicious Nodes (阅读 APP 与恶意节点) ===
+! === Reading & Malicious Nodes (阅读 APP 与穿山甲 SDK) ===
 ||api-ks.qimao.com^$important
 ||t-ads.qimao.com^$important
 ||log.qimao.com^$important
 ||p3-ad-sign.byteimg.com^$important
 ||v3-ad.bytebe.com^$important
 ||i.snssdk.com^$domain=~toutiao.com
+||pangolin-sdk-toutiao.com^$important
+||pglstatp-toutiao.com^$important
+||byteorge.com^$important
+||bytegoofy.com^$important
+||zijieapi.com^$important
+||gurd.snssdk.com^$important
 ||pl16857950.trustedcpmrevenue.com^$important
 ||static.ptoahaistais.com^$important
 ||su.tahltanboutell.com^$important
 ||super-app.me^$important
 
 ! === Cosmetic Filtering (元素隐藏与空白折叠) ===
-! 针对 Safari / Web 端拦截广告后遗留的空白占位符进行视觉级清理
 google.com,google.com.hk###tads
 google.com,google.com.hk##.commercial-unit-desktop-top
 youtube.com##ytd-display-ad-renderer
@@ -96,7 +101,6 @@ zhihu.com##.Pc-card.Card
 zhihu.com##.TopstoryItem--advertCard
 
 ! === Advanced Scriptlets (JS 注入与反检测) ===
-! 针对各大站点检测广告拦截器行为的全局免疫与重写
 *#%#//scriptlet("abort-on-property-read", "BlockAdBlock")
 *#%#//scriptlet("abort-on-property-read", "fuckAdBlock")
 *#%#//scriptlet("abort-on-property-read", "disable_adblocker")

@@ -11,18 +11,18 @@ permissions:
 jobs:
   update-rules:
     runs-on: ubuntu-latest
-    timeout-minutes: 15 # 防止死循环挂死 Action 额度
+    timeout-minutes: 10
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4 # 升级到 v4 稳定性更好
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # 获取完整历史以防 rebase 失败
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          cache: 'pip'
+          # 移除了 cache 选项，解决找不到 requirements.txt 的报错
 
       - name: Install Dependencies
         run: pip install requests
@@ -39,7 +39,6 @@ jobs:
             echo "No changes detected. Skipping commit."
           else
             git commit -m "🚀 Auto Sync [$(date +'%Y-%m-%d %H:%M')]"
-            # 使用强制推送或 rebase 确保无人值守成功
             git pull --rebase origin main
             git push origin main
           fi

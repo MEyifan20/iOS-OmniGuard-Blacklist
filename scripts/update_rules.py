@@ -8,7 +8,7 @@ BLACKLIST_FILE = 'iOS-OmniGuard-Blacklist.txt'
 MITM_MODULE_FILE = 'OmniGuard-Predator-MitM.sgmodule'
 README_FILE = 'README.md'
 
-# === 2026 极限稳健路径 (使用 Statically CDN 避开 Raw 404) ===
+# === 资源路径 ===
 SOURCES = {
     "bili": "https://cdn.statically.io/gh/Maasea/sgmodule/master/Script/Bilibili/Bilibili.js",
     "baidu": "https://cdn.statically.io/gh/Choler/Surge/master/Script/BaiduCloud.js",
@@ -18,73 +18,72 @@ SOURCES = {
     "qimao": "https://cdn.statically.io/gh/I-am-R-E/QuantumultX/main/JavaScript/QiMaoXiaoShuo.js"
 }
 
+NAME_MAP = {
+    "bili": "哔哩哔哩 (Bilibili)",
+    "baidu": "百度网盘 (BaiduCloud)",
+    "youtube": "YouTube 增强",
+    "amap": "高德地图 (AMap)",
+    "wechat": "微信解除限制",
+    "qimao": "七猫小说"
+}
+
 HEADERS = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15'}
 update_logs = []
+failed_modules = [] # 记录失效但保留的模块
 
 def check_url(item):
     name, url = item
     try:
-        # 加上时间戳防止 CDN 强缓存
-        resp = requests.get(f"{url}?v={datetime.datetime.now().microsecond}", headers=HEADERS, timeout=15)
+        # 使用毫秒级随机数击穿缓存
+        resp = requests.get(f"{url}?v={datetime.datetime.now().microsecond}", headers=HEADERS, timeout=12)
         if resp.status_code == 200 and len(resp.content) > 500:
             return name, True
-        update_logs.append(f"❌ {name} 资源不可用 [{resp.status_code}]")
+        update_logs.append(f"❌ {NAME_MAP[name]} 探测失效 [{resp.status_code}]")
+        failed_modules.append(NAME_MAP[name])
         return name, False
     except:
-        update_logs.append(f"⚠️ {name} 连接超时")
+        update_logs.append(f"⚠️ {NAME_MAP[name]} 探测超时")
+        failed_modules.append(NAME_MAP[name])
         return name, False
 
 def process_blacklist():
     if not os.path.exists(BLACKLIST_FILE): return
-    
     tz = datetime.timezone(datetime.timedelta(hours=8))
     now = datetime.datetime.now(tz)
-    v_str = now.strftime("%Y.%m.%d.%H")
-    t_str = now.strftime("%Y-%m-%d %H:%M")
+    v_str, t_str = now.strftime("%Y.%m.%d.%H"), now.strftime("%Y-%m-%d %H:%M")
 
     with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
         lines = f.readlines()
 
     final_lines = []
-    found_upd = False
     for line in lines:
-        raw_line = line.strip()
-        # 暴力替换时间戳：只要是以 ! 开头且包含关键字符
-        if raw_line.startswith('!') and 'Version' in raw_line:
+        raw = line.strip()
+        if raw.startswith('!') and 'Version' in raw:
             final_lines.append(f"! Version: {v_str}\n")
-        elif raw_line.startswith('!') and 'Updated' in raw_line:
+        elif raw.startswith('!') and 'Updated' in raw:
             final_lines.append(f"! Updated: {t_str}\n")
-            found_upd = True
         else:
             final_lines.append(line)
-            
-    # 如果文件里压根没找到 Updated 标记，在头部强行插入
-    if not found_upd:
-        final_lines.insert(2, f"! Updated: {t_str}\n")
 
     with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
         f.writelines(final_lines)
-    update_logs.append(f"📅 规则文件时间戳已强制同步: {t_str}")
 
 def generate_mitm_module(health):
-    print("⏳ 正在编译 MitM 模块...")
+    print("⏳ 正在编译模块 (维持稳定模式)...")
+    # 无论健康与否，都生成条目（保持最后版本）
     entries = []
-    # 采用更安全的字典取值
-    if health.get("bili"):
-        entries.append(f'bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll|interface\\.v1\\.Search/Default|resource\\.show\\.v1\\.Tab/GetTabs|account\\.v1\\.Account/Mine)$,requires-body=1,binary-body-mode=1,script-path={SOURCES["bili"]}')
-    if health.get("youtube"):
-        entries.append(f'youtube.response = type=http-response,pattern=^https://youtubei\\.googleapis\\.com/youtubei/v1/(browse|next|player|search|reel/reel_watch_sequence|guide|account/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SOURCES["youtube"]},argument="{{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true,\\"blockImmersive\\":true,\\"debug\\":false}}"')
-    if health.get("amap"):
-        entries.append(f'amap_ad = type=http-response,pattern=^https?://.*\\.amap\\.com/ws/(faas/amap-navigation/main-page|valueadded/alimama/splash_screen|msgbox/pull|shield/(shield/dsp/profile/index/nodefaas|search/new_hotword)),requires-body=1,script-path={SOURCES["amap"]}')
-    if health.get("wechat"):
-        entries.append(f'unblock_wechat = type=http-response,pattern=^https\\:\\/\\/(weixin110\\.qq|security.wechat)\\.com\\/cgi-bin\\/mmspamsupport-bin\\/newredirectconfirmcgi\\?,requires-body=1,max-size=0,script-path={SOURCES["wechat"]},argument="useCache=true&forceRedirect=true"')
-    if health.get("baidu"):
-        entries.append(f'baidu_cloud = type=http-response,pattern=^https?://pan\\.baidu\\.com/rest/2\\.0/membership/user,requires-body=1,script-path={SOURCES["baidu"]}')
-    if health.get("qimao"):
-        entries.append(f'qimao_vip = type=http-response,pattern=^https?://(api-\\w+|xiaoshuo)\\.wtzw\\.com/api/v\\d/,requires-body=1,script-path={SOURCES["qimao"]}')
+    entries.append(f'bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll|interface\\.v1\\.Search/Default|resource\\.show\\.v1\\.Tab/GetTabs|account\\.v1\\.Account/Mine)$,requires-body=1,binary-body-mode=1,script-path={SOURCES["bili"]}')
+    entries.append(f'youtube.response = type=http-response,pattern=^https://youtubei\\.googleapis\\.com/youtubei/v1/(browse|next|player|search|reel/reel_watch_sequence|guide|account/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SOURCES["youtube"]},argument="{{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true,\\"blockImmersive\\":true,\\"debug\\":false}}"')
+    entries.append(f'amap_ad = type=http-response,pattern=^https?://.*\\.amap\\.com/ws/(faas/amap-navigation/main-page|valueadded/alimama/splash_screen|msgbox/pull|shield/(shield/dsp/profile/index/nodefaas|search/new_hotword)),requires-body=1,script-path={SOURCES["amap"]}')
+    entries.append(f'unblock_wechat = type=http-response,pattern=^https\\:\\/\\/(weixin110\\.qq|security.wechat)\\.com\\/cgi-bin\\/mmspamsupport-bin\\/newredirectconfirmcgi\\?,requires-body=1,max-size=0,script-path={SOURCES["wechat"]},argument="useCache=true&forceRedirect=true"')
+    entries.append(f'baidu_cloud = type=http-response,pattern=^https?://pan\\.baidu\\.com/rest/2\\.0/membership/user,requires-body=1,script-path={SOURCES["baidu"]}')
+    entries.append(f'qimao_vip = type=http-response,pattern=^https?://(api-\\w+|xiaoshuo)\\.wtzw\\.com/api/v\\d/,requires-body=1,script-path={SOURCES["qimao"]}')
 
+    # 描述文字逻辑
+    status_desc = "🟢 全量正常" if not failed_modules else f"⚠️ 部分源异常(已冻结): {', '.join(failed_modules)}"
+    
     module_head = f"""#!name = iOS-OmniGuard Predator-MitM
-#!desc = 模块状态: {"🟢 正常" if len(entries)==6 else "🟠 部分组件下线"} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')}
+#!desc = {status_desc} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')} | 提示：若源持续失效，请手动检查脚本地址。
 #!category = OmniGuard
 #!system = ios
 
@@ -128,7 +127,17 @@ def update_readme():
     t_now = datetime.datetime.now(tz).strftime("%Y-%m-%d %H:%M")
     with open(README_FILE, 'r', encoding='utf-8') as f: content = f.read()
     
-    # 强制行搜索更新 README 时间
+    log_h = "## 📅 最近更新动态"
+    # 构建复杂的错误提示块
+    del_msg = ""
+    if failed_modules:
+        del_msg = f"\n> 🚨 **资源警告**：检测到 `{', '.join(failed_modules)}` 链接不可用。\n> 🛠️ **处理策略**：已为你保留该模块最后的有效版本，请检查上游地址或等待修复。"
+    
+    log_b = f"\n{log_h}\n> 更新于: {t_now}{del_msg}\n\n" + "\n".join([f"- {item}" for item in update_logs]) + "\n"
+    
+    if log_h in content:
+        content = re.sub(f"{log_h}.*?(?=\n##|$)", log_b, content, flags=re.DOTALL)
+    
     new_content = []
     for line in content.splitlines():
         if '**最后修改时间**：' in line:
@@ -136,13 +145,7 @@ def update_readme():
         else:
             new_content.append(line)
     
-    final_md = "\n".join(new_content)
-    log_h = "## 📅 最近更新动态"
-    log_b = f"\n{log_h}\n> 更新于: {t_now}\n\n" + "\n".join([f"- {item}" for item in update_logs]) + "\n"
-    if log_h in final_md:
-        final_md = re.sub(f"{log_h}.*?(?=\n##|$)", log_b, final_md, flags=re.DOTALL)
-    
-    with open(README_FILE, 'w', encoding='utf-8') as f: f.write(final_md)
+    with open(README_FILE, 'w', encoding='utf-8') as f: f.write("\n".join(new_content))
 
 if __name__ == '__main__':
     with ThreadPoolExecutor(max_workers=6) as executor:

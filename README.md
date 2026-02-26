@@ -77,7 +77,7 @@ https://raw.githubusercontent.com/MEyifan20/iOS-OmniGuard-Blacklist/refs/heads/m
 ---
 **iOS-OmniGuard-Blacklist** · 愿你的网络环境干净且自由。
 
-**最后修改时间**：2026-02-26 22:35 (GMT+8)
+**最后修改时间**：2026-02-26 22:36 (GMT+8)
 **Maintained by**: [MEyifan20](https://github.com/MEyifan20)  
 **License**: [MIT](https://opensource.org/licenses/mit-license.php)
 

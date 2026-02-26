@@ -1,62 +1,59 @@
-# 🛡️ iOS-OmniGuard-Blacklist (Predator-Standard)
+# 🛡️ iOS-OmniGuard-Whitelist
 
-[Adblock Plus 2.0]
-! Title: iOS-OmniGuard-Blacklist (Standard Unified Edition)
-! Description: 针对 iOS 环境深度优化的全能黑名单旗舰版。采用去重增强架构，精准锁定 Google、YouTube 及国内主流视频/阅读 APP，与 Whitelist 实现 100% 逻辑闭环。
-! Version: 2026.02.26.21
-! Codename: Predator-Standard
-! Updated: 2026-02-26 01:08
-! -------------------------------------------------------------------------------------------------------
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/mit-license.php)
+[![Platform: AdGuard Pro](https://img.shields.io/badge/Platform-iOS_AdGuard_Pro-green.svg)]()
+[![Version](https://img.shields.io/badge/Version-2026.02.26.26-blue.svg)]()
+[![Last Update](https://img.shields.io/badge/Last_Update-2026--02--26_14:55-red.svg)]()
+[![Build](https://img.shields.io/badge/Status-Grandmaster--Ultra-orange.svg)]()
+
+**iOS-OmniGuard-Whitelist** 是针对 iOS 环境深度优化的全能白名单旗舰版（Codename: **Grandmaster-Ultra**）。
+
+---
+
+## 📥 订阅地址 (手动复制添加)
+
+请复制下方 URL 并添加至您的拦截工具中：
+
+### 🚀 推荐：CDN 加速版 (jsDelivr)
+https://cdn.jsdelivr.net/gh/MEyifan20/iOS-OmniGuard-Whitelist@main/iOS-OmniGuard-Whitelist.txt
+
+---
+
+### 🔗 原生：GitHub 地址
+https://raw.githubusercontent.com/MEyifan20/iOS-OmniGuard-Whitelist/refs/heads/main/iOS-OmniGuard-Whitelist.txt
+
+---
+
+## ✨ 核心特性
+
+- **🚀 强制通行**：全量条目带有 $important 标识，拥有最高优先权。
+- **🍎 系统满血**：修复 iCloud、App Store 及苹果推送延迟问题。
+- **🤖 AI 全开**：优化 ChatGPT、Claude、Gemini 及 HuggingFace 访问。
+- **🔧 特殊补丁**：内置 FRP 穿透、验证码插件及底层 CDN 加速补丁。
 
 ## 📖 项目简介
-**iOS-OmniGuard-Blacklist** 是专为 iOS 高级用户打造的“去重增强型”拦截方案。本方案不以域名数量取胜，而是通过高强度的 $important 标签和 DNS 库无法实现的路径级规则，对顽固广告进行精准剥离。
+本规则专门用于修正激进拦截规则导致的系统瘫痪、App 误杀及网络访问异常。它集成了系统级核心补丁、AI 生产力加固及全球金融规则，旨在提供无感的拦截过滤体验。**注：本项目完全基于 AdGuard Pro 环境进行测试与开发。**
 
-本库已完成对 iOS-OmniGuard-Whitelist 的全量冲突校验，并针对全球最大规则集 217heidai/adblockdns 完成了物理去重，确保系统资源占用极低。
-
----
-
-## 🚀 订阅指引
-建议在 AdGuard Pro / Shadowrocket 中添加以下订阅地址：
-
-[ jsDelivr CDN 加速 (推荐国内直连) ]
-https://cdn.jsdelivr.net/gh/MEyifan20/Whitelist@main/iOS-OmniGuard-Blacklist.txt
-
-[ GitHub 原生地址 ]
-https://raw.githubusercontent.com/MEyifan20/Whitelist/main/iOS-OmniGuard-Blacklist.txt
-
----
-
-## 💎 核心优势
-* 🚀 极速补丁: 已剔除通用库中 20w+ 冗余域名，仅保留高频变动与高难度的特定规则。
-* 🎯 路径级过滤: 突破 DNS 拦截局限，精准锁定 YouTube 视频中插及 Google 统计脚本路径。
-* 🛠️ 强效修正: 使用 $important 标签，强制覆盖第三方规则中可能的误杀或漏杀。
-* 📖 深度专项: 内置“优爱腾芒”及“七猫/番茄”等国内主流视频与小说 APP 的专项补丁。
-
----
-
-## 🛠️ 技术指标 (Technical Metrics)
-为了实现极致的拦截效果，本项目遵循以下逻辑：
-$$Block \cap \{Ad, Tracker, Hijack\} \setminus \{Core\_Service\} = \emptyset$$
-
-| 模块名称 | 拦截目标 | 策略强度 |
-| :--- | :--- | :--- |
-| **Priority Targets** | Google 广告集群、GTM 追踪、路径级脚本 | 核心 (Core) |
-| **YouTube Predator** | 视频中插、QOE 统计、短视频广告标识 | 实时 (Real-time) |
-| **CN Video Shield** | 优爱腾芒、B站动态广告、日志上报 | 专项 (Special) |
-| **Reading Shield** | 七猫/番茄小说穿插、激励视频、SDK 注入 | 深度 (Clean) |
-| **Global Networks** | 全球主流广告分发、移动端统计引擎 | 强化 (Force) |
-
----
-
-## ⚙️ 配置建议
-1. 务必同时订阅 iOS-OmniGuard-Whitelist 并将其优先级设为最高，以确保系统服务不被误杀。
-2. 配合使用: 本列表已针对 217heidai 规则去重，建议将两者配合使用以获得覆盖率与性能的最优解。
-
----
+## 🛠️ 配置建议 (以 AdGuard Pro 为例)
+1. **添加路径**：防护 (盾牌图标) -> DNS 防护 -> DNS 过滤 -> DNS 过滤器 -> 添加过滤器。
+2. **配合黑名单**：建议配合激进全量如（217heidai）型黑名单使用，本规则将自动对关键服务进行“补丁式”放行。
+3. **手动刷新**：若遇到 CDN 缓存延迟，可尝试切换原生地址进行即时同步。
 
 ## 🤝 致谢与声明
-* 致谢: 感谢 EasyList, AdRules 及 217heidai 提供的基础数据支持。
-* 声明: 本项目仅供技术研究与交流使用，禁止用于任何非法用途。
+- **致谢**：感谢 **uBlock-LLC** 及其维护的 **[OK 项目](https://github.com/uBlock-LLC/OK)** 提供的基础数据支持。本项目由 Gemini 协作优化，重构了部分核心逻辑以适配 iOS 高性能需求。
+- **声明**：本项目仅供技术研究与交流使用，禁止用于任何非法用途。请在遵守当地法律法规的前提下使用。
+
+---
+
+## ❤️ 助力项目
+
+- **点亮 Star**：点击右上角 ⭐ Star，这是对我持续维护最大的动力。
+- **反馈问题**：请提交 [Issues](https://github.com/MEyifan20/iOS-OmniGuard-Whitelist/issues)。
+
+---
+**iOS-OmniGuard-Whitelist** · 愿你的网络环境干净且自由。
+
+**最后修改时间**：2026-02-26 14:55 (GMT+8)
 
 ---
 **Maintained by**: [MEyifan20](https://github.com/MEyifan20)  

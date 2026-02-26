@@ -11,34 +11,38 @@ BLACKLIST_FILE = 'iOS-OmniGuard-Blacklist.txt'
 MITM_MODULE_FILE = 'OmniGuard-Predator-MitM.sgmodule'
 README_FILE = 'README.md'
 
-CHECK_LIST = [
-    "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/bilibili.enhance.js",
-    "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js",
-    "https://github.com/ddgksf2013/Scripts/raw/master/amap.js",
-    "https://raw.githubusercontent.com/zZPiglet/Task/master/asset/UnblockURLinWeChat.js",
-    "https://raw.githubusercontent.com/Choler/Surge/master/Script/BaiduCloud.js",
-    "https://raw.githubusercontent.com/I-am-R-E/QuantumultX/main/JavaScript/QiMaoXiaoShuo.js"
-]
+# [无人值守优化] STRICT_MODE = True 时，若脚本链接失效，则不写入生成的模块文件
+STRICT_MODE = True
+
+# === 2026 最新校对后的链接映射 ===
+# 键名必须与 generate_mitm_module 函数中的变量名对应
+SOURCES = {
+    "bili": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/bilibili.js",
+    "youtube": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js",
+    "amap": "https://github.com/ddgksf2013/Scripts/raw/master/amap.js",
+    "wechat": "https://raw.githubusercontent.com/zZPiglet/Task/master/asset/UnblockURLinWeChat.js",
+    "baidu": "https://raw.githubusercontent.com/Choler/Surge/master/Script/BaiduCloud.js",
+    "qimao": "https://raw.githubusercontent.com/I-am-R-E/QuantumultX/main/JavaScript/QiMaoXiaoShuo.js"
+}
 
 COMMON_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
 }
 
-# 全局变量用于存储更新日志摘要
 update_logs = []
 
-def check_url(url):
+def check_url(name_url):
+    name, url = name_url
     try:
         with requests.Session() as s:
             resp = s.get(url, headers=COMMON_HEADERS, timeout=12)
             if resp.status_code == 200:
-                return None
-            msg = f"链接失效: {url.split('/')[-1]} [{resp.status_code}]"
-            update_logs.append(f"❌ {msg}")
-            return f"{url} [{resp.status_code}]"
-    except Exception as e:
-        update_logs.append(f"⚠️ 网络超时: {url.split('/')[-1]}")
-        return f"{url} (Timeout)"
+                return name, True
+            update_logs.append(f"❌ 链接失效: {name} [{resp.status_code}]")
+            return name, False
+    except:
+        update_logs.append(f"⚠️ 网络超时: {name}")
+        return name, False
 
 def process_blacklist():
     print("⏳ 正在同步黑名单...")
@@ -51,8 +55,7 @@ def process_blacklist():
 
     if not os.path.exists(BLACKLIST_FILE): return
     with open(BLACKLIST_FILE, 'r', encoding='utf-8') as f:
-        old_content = f.read()
-        lines = old_content.splitlines()
+        lines = f.read().splitlines()
 
     new_lines = []
     removed_count = 0
@@ -67,7 +70,7 @@ def process_blacklist():
         new_lines.append(line)
 
     if removed_count > 0:
-        update_logs.append(f"🧹 黑名单优化：自动剔除 {removed_count} 条与上游重复的规则。")
+        update_logs.append(f"扫帚 自动剔除 {removed_count} 条重复 DNS 规则。")
 
     tz = datetime.timezone(datetime.timedelta(hours=8))
     now = datetime.datetime.now(tz)
@@ -80,14 +83,29 @@ def process_blacklist():
     with open(BLACKLIST_FILE, 'w', encoding='utf-8') as f:
         f.write(content)
 
-def generate_mitm_module(failed_urls):
+def generate_mitm_module(health_status):
     print("⏳ 正在生成 MitM 模块...")
-    status_emoji = "🟢" if not failed_urls else "🟠"
-    if not failed_urls:
-        update_logs.append("✅ 核心脚本健康检测通过，所有外部资源在线。")
     
+    # 定义各组件脚本条目
+    scripts = {
+        "bili": f'bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll|interface\\.v1\\.Search/Default|resource\\.show\\.v1\\.Tab/GetTabs|account\\.v1\\.Account/Mine)$,requires-body=1,binary-body-mode=1,script-path={SOURCES["bili"]}',
+        "youtube": f'youtube.response = type=http-response,pattern=^https://youtubei\\.googleapis\\.com/youtubei/v1/(browse|next|player|search|reel/reel_watch_sequence|guide|account/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SOURCES["youtube"]},argument="{{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true,\\"blockImmersive\\":true,\\"debug\\":false}}"',
+        "amap": f'amap_ad = type=http-response,pattern=^https?://.*\\.amap\\.com/ws/(faas/amap-navigation/main-page|valueadded/alimama/splash_screen|msgbox/pull|shield/(shield/dsp/profile/index/nodefaas|search/new_hotword)),requires-body=1,script-path={SOURCES["amap"]}',
+        "wechat": f'unblock_wechat = type=http-response,pattern=^https\\:\\/\\/(weixin110\\.qq|security.wechat)\\.com\\/cgi-bin\\/mmspamsupport-bin\\/newredirectconfirmcgi\\?,requires-body=1,max-size=0,script-path={SOURCES["wechat"]},argument="useCache=true&forceRedirect=true"',
+        "baidu": f'baidu_cloud = type=http-response,pattern=^https?://pan\\.baidu\\.com/rest/2\\.0/membership/user,requires-body=1,script-path={SOURCES["baidu"]}',
+        "qimao": f'qimao_vip = type=http-response,pattern=^https?://(api-\\w+|xiaoshuo)\\.wtzw\\.com/api/v\\d/,requires-body=1,script-path={SOURCES["qimao"]}'
+    }
+
+    # 根据健康检查结果过滤脚本 (STRICT_MODE)
+    valid_scripts = []
+    for name, script_line in scripts.items():
+        if health_status.get(name, False):
+            valid_scripts.append(script_line)
+        elif not STRICT_MODE:
+            valid_scripts.append(f"# ⚠️ 失效暂存: {script_line}")
+
     module_template = f"""#!name = iOS-OmniGuard Predator-MitM
-#!desc = 状态: {"正常" if not failed_urls else "部分异常"} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')} | 自动同步 Maasea 等资源。
+#!desc = 状态: {"正常" if len(valid_scripts)==len(scripts) else "部分失效剔除"} | 更新: {datetime.datetime.now().strftime('%m-%d %H:%M')} | 4K/倍速/解锁全集成。
 #!category = OmniGuard
 #!system = ios
 
@@ -118,12 +136,7 @@ https://ahrefs.com/writing-tools/paragraph-rewriter
 ^https?://s\\.youtube\\.com/api/stats/qoe\\?adcontext _ reject-200
 
 [Script]
-bili.enhance = type=http-response,pattern=^https://app\\.bilibili\\.com/bilibili\\.app\\.(view\\.v1\\.View/View|dynamic\\.v2\\.Dynamic/DynAll|interface\\.v1\\.Search/Default|resource\\.show\\.v1\\.Tab/GetTabs|account\\.v1\\.Account/Mine)$,requires-body=1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Bilibili/bilibili.enhance.js
-youtube.response = type=http-response,pattern=^https://youtubei\\.googleapis\\.com/youtubei/v1/(browse|next|player|search|reel/reel_watch_sequence|guide|account/get_setting/get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js,argument="{{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true,\\"blockImmersive\\":true,\\"debug\\":false}}"
-amap_ad = type=http-response,pattern=^https?://.*\\.amap\\.com/ws/(faas/amap-navigation/main-page|valueadded/alimama/splash_screen|msgbox/pull|shield/(shield/dsp/profile/index/nodefaas|search/new_hotword)),requires-body=1,script-path=https://github.com/ddgksf2013/Scripts/raw/master/amap.js
-unblock_wechat = type=http-response,pattern=^https\\:\\/\\/(weixin110\\.qq|security.wechat)\\.com\\/cgi-bin\\/mmspamsupport-bin\\/newredirectconfirmcgi\\?,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/zZPiglet/Task/master/asset/UnblockURLinWeChat.js,argument="useCache=true&forceRedirect=true"
-baidu_cloud = type=http-response,pattern=^https?://pan\\.baidu\\.com/rest/2\\.0/membership/user,requires-body=1,script-path=https://raw.githubusercontent.com/Choler/Surge/master/Script/BaiduCloud.js
-qimao_vip = type=http-response,pattern=^https?://(api-\\w+|xiaoshuo)\\.wtzw\\.com/api/v\\d/,requires-body=1,script-path=https://raw.githubusercontent.com/I-am-R-E/QuantumultX/main/JavaScript/QiMaoXiaoShuo.js
+{"\n".join(valid_scripts)}
 
 [MITM]
 hostname = %APPEND% *amap.com, security.wechat.com, weixin110.qq.com, pan.baidu.com, app.bilibili.com, api.live.bilibili.com, api.vc.bilibili.com, api.bilibili.com, manga.bilibili.com, grpc.biliapi.net, api.biliapi.net, -broadcast.chat.bilibili.com, api.zhihu.com, btrace.video.qq.com, t7z.cupid.iqiyi.com, ad.api.3g.youku.com, *ad-sign.byteimg.com, *ad.bytebe.com, api-ks.qimao.com, wtw.qimao.com, edith.xiaohongshu.com, www.youtube.com, s.youtube.com, youtubei.googleapis.com, -*redirector*.googlevideo.com, *.googlevideo.com, *.wtzw.com, *.pangolin-sdk-toutiao, *.pstatp.com, gurd.snssdk.com
@@ -140,37 +153,24 @@ def update_readme():
     with open(README_FILE, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # 1. 更新最后修改时间
     content = re.sub(r'\*\*最后修改时间\*\*：.*', f'**最后修改时间**：{time_str} (GMT+8)', content)
-
-    # 2. 更新 CDN 地址
+    
     cdn_header = "## 🚀 全自动 CDN 订阅地址"
     cdn_body = f"\n{cdn_header}\n- **Predator-MitM 模块**: `{cdn_mitm}`\n- **DNS 黑名单**: `{cdn_dns}`\n"
-    if cdn_header in content:
-        content = re.sub(f"{cdn_header}.*?txt`", cdn_body.strip(), content, flags=re.DOTALL)
-    else:
-        content += cdn_body
+    content = re.sub(f"{cdn_header}.*?txt`", cdn_body.strip(), content, flags=re.DOTALL) if cdn_header in content else content + cdn_body
 
-    # 3. 更新自动生成的【最近更新动态】
     log_header = "## 📅 最近更新动态"
     log_content = f"\n{log_header}\n> 更新于: {time_str}\n\n" + "\n".join([f"- {item}" for item in update_logs]) + "\n"
-    
-    if log_header in content:
-        # 使用正则表达式替换旧的 Log 区域
-        content = re.sub(f"{log_header}.*?(?=\n##|$)", log_content, content, flags=re.DOTALL)
-    else:
-        content += log_content
+    content = re.sub(f"{log_header}.*?(?=\n##|$)", log_content, content, flags=re.DOTALL) if log_header in content else content + log_content
 
     with open(README_FILE, 'w', encoding='utf-8') as f:
         f.write(content)
-    print("✅ README.md 更新动态已同步。")
 
 if __name__ == '__main__':
-    update_logs.append("🚀 开始自动化执行构建任务...")
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        future_failed = executor.submit(lambda: [r for r in list(map(check_url, CHECK_LIST)) if r])
-        process_blacklist()
-        failed_urls = future_failed.result()
-    generate_mitm_module(failed_urls)
-    update_logs.append("📦 所有规则文件编译完成。")
+    with ThreadPoolExecutor(max_workers=len(SOURCES)) as executor:
+        results = list(executor.map(check_url, SOURCES.items()))
+        health_status = dict(results)
+    
+    process_blacklist()
+    generate_mitm_module(health_status)
     update_readme()

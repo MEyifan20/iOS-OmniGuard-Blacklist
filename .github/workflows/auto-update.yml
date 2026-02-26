@@ -2,24 +2,30 @@ name: OmniGuard Auto Update
 
 on:
   schedule:
-    - cron: '0 20 * * *'
+    - cron: '0 20 * * *' # 每天北京时间凌晨4点
   workflow_dispatch:
 
-# 新增这行权限配置，允许机器人修改和推送代码
 permissions:
   contents: write
 
 jobs:
   update-rules:
     runs-on: ubuntu-latest
+    timeout-minutes: 15 # 防止死循环挂死 Action 额度
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # 升级到 v4 稳定性更好
+        with:
+          fetch-depth: 0 # 获取完整历史以防 rebase 失败
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: pip install requests
 
       - name: Run Auto Update Script
         run: python scripts/update_rules.py
@@ -29,5 +35,11 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
-          git commit -m "🚀 Auto Update: Sync version and timestamp" || echo "No changes to commit"
-          git push
+          if git diff --staged --quiet; then
+            echo "No changes detected. Skipping commit."
+          else
+            git commit -m "🚀 Auto Sync [$(date +'%Y-%m-%d %H:%M')]"
+            # 使用强制推送或 rebase 确保无人值守成功
+            git pull --rebase origin main
+            git push origin main
+          fi

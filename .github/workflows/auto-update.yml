@@ -2,9 +2,9 @@ name: OmniGuard Auto Update
 
 on:
   schedule:
-    # 每天北京时间凌晨 04:00 自动运行 (UTC 20:00)
+    # 每天北京时间凌晨 04:00 自动运行 (对应 UTC 20:00)
     - cron: '0 20 * * *' 
-  workflow_dispatch: # 支持手动点击触发
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -27,18 +27,23 @@ jobs:
         run: pip install requests
 
       - name: Run Auto Update Scripts
-        # ⚠️ 必须与仓库中的文件名大小写完全一致
         run: python scripts/update_rules.py
 
       - name: Commit and Push Changes
+        # 设定环境为北京时间，确保 Commit 记录的时间正确
+        env:
+          TZ: Asia/Shanghai 
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add .
+          
+          # 精确添加指定文件
+          git add iOS-OmniGuard-Blacklist.txt OmniGuard-Predator-MitM.sgmodule README.md
+          
           if git diff --staged --quiet; then
-            echo "No changes detected. Skipping commit."
+            echo "✅ No changes detected. Skipping commit."
           else
             git commit -m "🚀 Auto Update: $(date +'%Y-%m-%d %H:%M') [skip ci]"
-            git pull --rebase origin main
+            git pull origin main --rebase
             git push origin main
           fi

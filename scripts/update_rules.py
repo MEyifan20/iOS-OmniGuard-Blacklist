@@ -9,7 +9,7 @@ MITM_MODULE_FILE = os.path.join(BASE_DIR, 'OmniGuard-Predator-MitM.sgmodule')
 README_FILE = os.path.join(BASE_DIR, 'README.md')
 
 # ==========================================================
-# 资源配置 (如果原作者更换了链接，在这里修改即可)
+# 资源配置
 # ==========================================================
 SOURCES = {
     "bili": "https://raw.githubusercontent.com/app2smile/rules/master/js/bilibili-proto.js",
@@ -61,9 +61,8 @@ def main():
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
-https://ahrefs.com/writing-tools/paragraph-rewriter
+https://www.merriam-webster.com/dictionary/rewrite
 # ～OmniGuard_基础去广告
-^https?://ahrefs\.com/writing-tools/paragraph-rewriter - reject
 ^https?://.*\.amap\.com/ws/(boss/order_web/\w{8}_information|asa/ads_attribution) - reject
 ^https?://pan\.baidu\.com/act/.+ad_ - reject
 ^https?://.+\.pangle\.io/api/ad/union/sdk/ - reject
@@ -119,6 +118,7 @@ biliad12 = type=http-response,pattern=^https:\/\/app\.bilibili\.com\/bilibili\.a
 hostname = %APPEND% -redirector*.googlevideo.com, -broadcast.chat.bilibili.com, -*cdn*.biliapi.net, -*tracker*.biliapi.net, *amap.com, pan.baidu.com, *.googlevideo.com, www.youtube.com, s.youtube.com, youtubei.googleapis.com, *.pangolin-sdk-toutiao.com, *.pangle.io, *.pstatp.com, gurd.snssdk.com, app.bilibili.com, api.live.bilibili.com, api.vc.bilibili.com, api.bilibili.com, manga.bilibili.com, grpc.biliapi.net, api.biliapi.net
 """
 
+    # 动态注入
     m = m_template.replace('{{UPDATE_TIME}}', t_str)
     m = m.replace('{{BAIDU_URL}}', SOURCES["baidu"])
     m = m.replace('{{YOUTUBE_URL}}', SOURCES["youtube"])
@@ -128,28 +128,49 @@ hostname = %APPEND% -redirector*.googlevideo.com, -broadcast.chat.bilibili.com, 
     with open(MITM_MODULE_FILE, 'w', encoding='utf-8') as f: f.write(m)
 
     # --- 阶段 D: 更新 README.md ---
+    if not os.path.exists(README_FILE):
+        base_readme = f"""# iOS-OmniGuard-Blacklist
+
+**最后修改时间**：{t_str} (GMT+8)
+! Version: {v_str}
+! Updated: {t_str}
+
+## 📅 最近更新动态
+> 更新于: {t_str}
+"""
+        with open(README_FILE, 'w', encoding='utf-8') as f: f.write(base_readme)
+        
     if os.path.exists(README_FILE):
-        with open(README_FILE, 'r', encoding='utf-8') as f:
-            content = f.read()
+        with open(README_FILE, 'r', encoding='utf-8') as f: content = f.read()
         
-        # 1. 替换基础信息
-        content = re.sub(r'\*\*最后修改时间\*\*：.*', f'**最后修改时间**：{t_str} (GMT+8)', content)
-        content = re.sub(r'! Version: .*', f'! Version: {v_str}', content)
-        content = re.sub(r'! Updated: .*', f'! Updated: {t_str}', content)
+        lines = content.splitlines()
+        new_lines = []
+        for line in lines:
+            if '**最后修改时间**：' in line:
+                new_lines.append(f"**最后修改时间**：{t_str} (GMT+8)")
+            elif '! Version:' in line:
+                new_lines.append(f"! Version: {v_str}")
+            elif '! Updated:' in line:
+                new_lines.append(f"! Updated: {t_str}")
+            else:
+                new_lines.append(line)
+        content = '\n'.join(new_lines)
 
-        # 2. 构建日志内容
-        log_block = f"## 📅 最近更新动态\n> 更新于: {t_str}\n" + '\n'.join([f"- {s}" for s in status_logs]) + "\n\n---"
+        log_header = "## 📅 最近更新动态"
+        log_body = f"\n> 更新于: {t_str}\n" + '\n'.join([f"- {s}" for s in status_logs]) + "\n"
         
-        # 3. 替换原有日志块
-        if "## 📅 最近更新动态" in content:
-            content = re.sub(r'## 📅 最近更新动态[\s\S]*?---', log_block, content)
+        if log_header in content:
+            parts = content.split(log_header)
+            suffix = parts[1].split("\n---")
+            if len(suffix) > 1:
+                content = parts[0] + log_header + log_body + "\n---" + "---".join(suffix[1:])
+            else:
+                content = parts[0] + log_header + log_body
         else:
-            content += f"\n\n{log_block}"
+            content += f"\n\n{log_header}{log_body}\n---"
 
-        with open(README_FILE, 'w', encoding='utf-8') as f:
-            f.write(content)
+        with open(README_FILE, 'w', encoding='utf-8') as f: f.write(content)
 
-    # 触碰文件时间戳，确保 Git 能检测到修改
     for file_path in [BLACKLIST_FILE, MITM_MODULE_FILE, README_FILE]:
         if os.path.exists(file_path): os.utime(file_path, None)
 

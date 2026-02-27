@@ -6,6 +6,10 @@ on:
     - cron: '0 20 * * *'
   workflow_dispatch: # 允许在 GitHub Actions 页面手动点击运行
 
+# === 赋予机器人推送代码的写入权限 ===
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest

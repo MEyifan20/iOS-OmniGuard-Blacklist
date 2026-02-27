@@ -1,43 +1,39 @@
 #!name=iOS-OmniGuard Predator (小火箭适配版)
-#!desc=状态: 运行中 | 更新: 2026-02-28 06:05 | 基于 Maasea 原厂逻辑重构，修复画中画、后台播放及历史记录同步。
+#!desc=状态: 运行中 | 更新: 2026-02-28 06:19 | 已固化 Maasea 原厂逻辑，确保画中画与后台播放永久生效。
 #!category=OmniGuard
 #!system=ios
 
 [Rule]
-# 核心：阻断 YouTube UDP 协议，防止广告通过 QUIC 协议逃逸 (画中画关键)
+# 固化：封死 UDP 逃逸通道 (画中画激活前提)
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
 https://ahrefs.com/writing-tools/paragraph-rewriter
-# ～YouTube_原作者标准规则 (保留下划线占位符以确保小火箭解析稳定)
+# --- 锁定 YouTube 核心重写 (严格复刻，严禁修改) ---
 (^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
 ^https?:\/\/[\w-]+\.googlevideo\.com\/(?!(dclk_video_ads|videoplayback\?)).+&oad _ reject-200
 ^https?:\/\/(www|s)\.youtube\.com\/api\/stats\/ads _ reject-200
 ^https?:\/\/(www|s)\.youtube\.com\/(pagead|ptracking) _ reject-200
 ^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?adcontext _ reject-200
 
-# ～OmniGuard_基础去广告
+# --- 扩展应用规则 ---
 ^https?:\/\/.*\.amap\.com\/ws\/(boss\/order_web\/\w{8}_information|asa\/ads_attribution) reject
 ^https?:\/\/pan\.baidu\.com\/act\/.+ad_ reject
 ^https?:\/\/.+\.pangle\.io\/api\/ad\/union\/sdk\/ reject
 ^https?:\/\/.+\.pangolin-sdk-toutiao\.com\/api\/ad\/union\/sdk\/(get_ads|stats|settings)\/ reject
 ^https?:\/\/gurd\.snssdk\.com\/src\/server\/v3\/package reject
-
-# ～BiliBili_应用去广告
 (^https?:\/\/app\.biliintl\.com\/intl\/.+)(&sim_code=\d+)(.+) $1$3 302
 ^https?:\/\/app\.bilibili\.com\/x\/resource\/ip reject
 ^https?:\/\/app\.bilibili\.com\/bilibili\.app\.interface\.v1\.Search\/Default reject
-^https?:\/\/api\.bilibili\.com\/x\/vip\/ads\/material\/report reject-dict
-^https?:\/\/manga\.bilibili\.com\/twirp\/comic\.v\d\.Comic\/(Flash|ListFlash) reject-dict
 
 [Script]
-# ～YouTube_增强脚本 (Maasea 核心注入)
+# --- 锁定脚本注入 ---
 youtube.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js,argument="{\"lyricLang\":\"zh-Hans\",\"captionLang\":\"zh-Hans\",\"blockUpload\":true,\"blockImmersive\":true,\"debug\":false}"
 
-# ～BiliBili_脚本合集
 biliad1 = type=http-response,pattern=^https?:\/\/api\.(bilibili|biliapi)\.(com|net)\/pgc\/page\/cinema\/tab\?,requires-body=1,script-path=https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.js
 biliad12 = type=http-response,pattern=^https:\/\/app\.bilibili\.com\/bilibili\.app\.(view\.v1\.View\/View|dynamic\.v2\.Dynamic\/DynAll)$,requires-body=1,binary-body-mode=1,script-path=https://raw.githubusercontent.com/app2smile/rules/master/js/bilibili-proto.js
 baidu_cloud = type=http-response,pattern=^https?://pan\.baidu\.com/rest/2\.0/membership/user,requires-body=1,script-path=https://raw.githubusercontent.com/NobyDa/Script/master/Surge/JS/BaiduCloud.js
 
 [MITM]
-hostname = -redirector*.googlevideo.com, *.googlevideo.com, www.youtube.com, s.youtube.com, youtubei.googleapis.com, pan.baidu.com, *.amap.com, *.bilibili.com, *.biliapi.net, app.biliintl.com
+# 锁定：使用 %APPEND% 强制合并
+hostname = %APPEND% -redirector*.googlevideo.com, *.googlevideo.com, www.youtube.com, s.youtube.com, youtubei.googleapis.com, pan.baidu.com, *.amap.com, *.bilibili.com, *.biliapi.net, app.biliintl.com

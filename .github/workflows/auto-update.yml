@@ -1,49 +1,35 @@
-name: OmniGuard Auto Update
+name: Auto Update Rules & Modules
 
 on:
   schedule:
-    # 每天北京时间凌晨 04:00 自动运行 (对应 UTC 20:00)
-    - cron: '0 20 * * *' 
-  workflow_dispatch:
-
-permissions:
-  contents: write
+    # 每天 UTC 时间 20:00 执行（对应北京时间凌晨 04:00）
+    - cron: '0 20 * * *'
+  workflow_dispatch: # 允许在 GitHub Actions 页面手动点击运行
 
 jobs:
-  update-rules:
+  build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 1
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
 
-      - name: Install Dependencies
-        run: pip install requests
+    - name: Run Update Script
+      run: |
+        # 确保 Python 脚本文件名与您仓库中一致
+        python update_rules.py
 
-      - name: Run Auto Update Scripts
-        run: python scripts/update_rules.py
-
-      - name: Commit and Push Changes
-        # 设定环境为北京时间，确保 Commit 记录的时间正确
-        env:
-          TZ: Asia/Shanghai 
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          
-          # 精确添加指定文件
-          git add iOS-OmniGuard-Blacklist.txt OmniGuard-Predator-MitM.sgmodule README.md
-          
-          if git diff --staged --quiet; then
-            echo "✅ No changes detected. Skipping commit."
-          else
-            git commit -m "🚀 Auto Update: $(date +'%Y-%m-%d %H:%M') [skip ci]"
-            git pull origin main --rebase
-            git push origin main
-          fi
+    - name: Commit and Push Changes
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add .
+        # 如果没有文件变动，则跳过 commit 防止报错
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update: Sync rules and modules [skip ci]" && git push)

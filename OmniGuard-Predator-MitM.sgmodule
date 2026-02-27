@@ -1,5 +1,5 @@
 #!name = iOS-OmniGuard Predator-MitM (Pro融合版)
-#!desc = 状态: 运行中 | 更新: 2026-02-28 00:58 | 深度融合 YouTube & Bilibili 专项去广告增强
+#!desc = 状态: 运行中 | 更新: 2026-02-28 01:10 | 深度融合 YouTube & Bilibili 专项去广告增强
 #!category = OmniGuard
 #!system = ios
 
@@ -8,9 +8,8 @@
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
-https://ahrefs.com/writing-tools/paragraph-rewriter
+https://www.merriam-webster.com/dictionary/rewrite
 # ～OmniGuard_基础去广告
-^https?://ahrefs\.com/writing-tools/paragraph-rewriter - reject
 ^https?://.*\.amap\.com/ws/(boss/order_web/\w{8}_information|asa/ads_attribution) - reject
 ^https?://pan\.baidu\.com/act/.+ad_ - reject
 ^https?://.+\.pangle\.io/api/ad/union/sdk/ - reject

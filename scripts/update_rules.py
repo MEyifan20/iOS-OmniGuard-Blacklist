@@ -13,8 +13,9 @@ SCRIPTS = {
     "baidu": "https://raw.githubusercontent.com/NobyDa/Script/master/Surge/JS/BaiduCloud.js"
 }
 
-# === 2. 规则清洗 (保持兼容历史记录) ===
+# === 2. 规则清洗 (仅针对外部拉取的 DNS 黑名单，不触碰模块逻辑) ===
 def clean_and_merge_rules(raw_dns_text):
+    # 确保黑名单中不含干扰 YouTube 历史记录和画中画的物理拦截行
     conflict_patterns = [
         re.compile(r"\|\|s\.youtube\.com\^.*"),
         re.compile(r"\|\|youtube\.com/api/stats/.*"),
@@ -28,30 +29,30 @@ def clean_and_merge_rules(raw_dns_text):
             cleaned_lines.append(line)
     return "\n".join(list(dict.fromkeys(cleaned_lines)))
 
-# === 3. 生成模块 (全量注入原作者 YouTube 代码) ===
+# === 3. 生成模块 (核心逻辑固化，确保自动更新不失效) ===
 def generate_sgmodule(version_str):
-    # 严格转义，确保成品中是 \"
+    # 锁定原作者 Argument 格式，确保 \" 转义正确
     yt_arg = '{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true,\\"blockImmersive\\":true,\\"debug\\":false}'
     
     module_content = f"""#!name=iOS-OmniGuard Predator (小火箭适配版)
-#!desc=状态: 运行中 | 更新: {version_str} | 全量集成 Maasea 原厂逻辑，修复画中画与后台播放。
+#!desc=状态: 运行中 | 更新: {version_str} | 已固化 Maasea 原厂逻辑，确保画中画与后台播放永久生效。
 #!category=OmniGuard
 #!system=ios
 
 [Rule]
-# 封死 UDP 逃逸通道 (原作者逻辑)
+# 固化：封死 UDP 逃逸通道 (画中画激活前提)
 AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
 AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
 
 https://ahrefs.com/writing-tools/paragraph-rewriter
-# --- YouTube 核心重写 (严格复刻，无冗余噪音) ---
+# --- 锁定 YouTube 核心重写 (严格复刻，严禁修改) ---
 (^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
 ^https?:\/\/[\w-]+\.googlevideo\.com\/(?!(dclk_video_ads|videoplayback\?)).+&oad _ reject-200
 ^https?:\/\/(www|s)\.youtube\.com\/api\/stats\/ads _ reject-200
 ^https?:\/\/(www|s)\.youtube\.com\/(pagead|ptracking) _ reject-200
 ^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?adcontext _ reject-200
 
-# --- 其他项目规则 (去重保留) ---
+# --- 扩展应用规则 ---
 ^https?:\/\/.*\.amap\.com\/ws\/(boss\/order_web\/\w{{8}}_information|asa\/ads_attribution) reject
 ^https?:\/\/pan\.baidu\.com\/act\/.+ad_ reject
 ^https?:\/\/.+\.pangle\.io\/api\/ad\/union\/sdk\/ reject
@@ -62,21 +63,21 @@ https://ahrefs.com/writing-tools/paragraph-rewriter
 ^https?:\/\/app\.bilibili\.com\/bilibili\.app\.interface\.v1\.Search\/Default reject
 
 [Script]
-# --- YouTube 脚本注入 ---
+# --- 锁定脚本注入 ---
 youtube.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SCRIPTS['youtube']},argument="{yt_arg}"
 
-# --- BiliBili & 网盘 ---
 biliad1 = type=http-response,pattern=^https?:\/\/api\.(bilibili|biliapi)\.(com|net)\/pgc\/page\/cinema\/tab\?,requires-body=1,script-path={SCRIPTS['bili']}
 biliad12 = type=http-response,pattern=^https:\/\/app\.bilibili\.com\/bilibili\.app\.(view\.v1\.View\/View|dynamic\.v2\.Dynamic\/DynAll)$,requires-body=1,binary-body-mode=1,script-path={SCRIPTS['bili_proto']}
 baidu_cloud = type=http-response,pattern=^https?://pan\.baidu\.com/rest/2\.0/membership/user,requires-body=1,script-path={SCRIPTS['baidu']}
 
 [MITM]
+# 锁定：使用 %APPEND% 强制合并
 hostname = %APPEND% -redirector*.googlevideo.com, *.googlevideo.com, www.youtube.com, s.youtube.com, youtubei.googleapis.com, pan.baidu.com, *.amap.com, *.bilibili.com, *.biliapi.net, app.biliintl.com
 """
     with open("OmniGuard-Predator-MitM.sgmodule", "w", encoding="utf-8") as f:
         f.write(module_content)
 
-# === 4. 其他辅助函数保持不变 ===
+# === 4. 其余辅助逻辑保持不变 ===
 def generate_blacklist_txt(cleaned_rules, version_str):
     header = f"[Adblock Plus 2.0]\\n! Title: iOS-OmniGuard-Blacklist\\n! Version: {version_str}\\n! -------------------------------------------------------------------------------------------------------\\n"
     with open("iOS-OmniGuard-Blacklist.txt", "w", encoding="utf-8") as f:

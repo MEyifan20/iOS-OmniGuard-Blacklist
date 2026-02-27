@@ -23,13 +23,14 @@ jobs:
 
     - name: Run Update Script
       run: |
-        # 确保 Python 脚本文件名与您仓库中一致
-        python update_rules.py
+        # 站在根目录，执行 Scripts 文件夹里的 Python 脚本
+        # 这样能确保 README.md 和生成的配置文件都在外层根目录被正确处理
+        python Scripts/update_rules.py
 
     - name: Commit and Push Changes
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         git add .
-        # 如果没有文件变动，则跳过 commit 防止报错
+        # 检查是否有文件变动，有则提交，无则跳过防报错
         git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update: Sync rules and modules [skip ci]" && git push)

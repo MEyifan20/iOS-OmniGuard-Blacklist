@@ -1,9 +1,9 @@
 [Adblock Plus 2.0]
 ! Title: iOS-OmniGuard-Blacklist (Standard Unified Edition)
 ! Description: 针对 iOS 环境深度优化的全能黑名单旗舰版。已剔除 adblockdns 冗余项，集成了元素隐藏与高级脚本注入，实现 100% 纯净渲染。
-! Version: 2026.02.27.04
+! Version: 2026.02.28.00
 ! Codename: Predator-Standard
-! Updated: 2026-02-27 04:24
+! Updated: 2026-02-28 00:58
 ! Homepage: https://github.com/MEyifan20/iOS-OmniGuard-Blacklist
 ! License: https://opensource.org/licenses/mit-license.php
 ! Changelog: 1. 集成番茄小说/畅听专项规则；2. 强化穿山甲 SDK 拦截；3. 优化字节系广告分发节点。

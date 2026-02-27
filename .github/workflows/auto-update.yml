@@ -4,9 +4,8 @@ on:
   schedule:
     # 每天 UTC 时间 20:00 执行（对应北京时间凌晨 04:00）
     - cron: '0 20 * * *'
-  workflow_dispatch: # 允许在 GitHub Actions 页面手动点击运行
+  workflow_dispatch: # 允许手动触发
 
-# === 赋予机器人推送代码的写入权限 ===
 permissions:
   contents: write
 
@@ -27,7 +26,7 @@ jobs:
 
     - name: Run Update Script
       run: |
-        # 严格遵守 Linux 大小写规范，指向小写的 scripts 目录
+        # 严格遵守小写路径规范
         python scripts/update_rules.py
 
     - name: Commit and Push Changes
@@ -35,5 +34,6 @@ jobs:
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         git add .
-        # 检查是否有文件变动，有则提交，无则跳过防报错
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update: Sync rules and modules [skip ci]" && git push)
+        # 强制提交：即使规则没变，时间戳的变化也会触发 Commit
+        git commit -m "Auto-update: Sync rules and refresh timestamps [skip ci]" || echo "No changes to commit"
+        git push

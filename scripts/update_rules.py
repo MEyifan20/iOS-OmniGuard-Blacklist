@@ -13,9 +13,9 @@ SCRIPTS = {
     "baidu": "https://raw.githubusercontent.com/NobyDa/Script/master/Surge/JS/BaiduCloud.js"
 }
 
-# === 2. 规则清洗 (仅针对外部拉取的 DNS 黑名单，不触碰模块逻辑) ===
+# === 2. 核心清洗函数 (仅针对外部拉取的 DNS 黑名单) ===
 def clean_and_merge_rules(raw_dns_text):
-    # 确保黑名单中不含干扰 YouTube 历史记录和画中画的物理拦截行
+    # 剔除黑名单中可能干扰 YouTube 历史记录和画中画的物理拦截行
     conflict_patterns = [
         re.compile(r"\|\|s\.youtube\.com\^.*"),
         re.compile(r"\|\|youtube\.com/api/stats/.*"),
@@ -27,9 +27,10 @@ def clean_and_merge_rules(raw_dns_text):
             continue
         if not any(p.match(line) for p in conflict_patterns):
             cleaned_lines.append(line)
+    # 去重并合并
     return "\n".join(list(dict.fromkeys(cleaned_lines)))
 
-# === 3. 生成模块 (核心逻辑固化，确保自动更新不失效) ===
+# === 3. 生成模块 (全量复刻 Maasea 逻辑，确保自动更新不失效) ===
 def generate_sgmodule(version_str):
     # 锁定原作者 Argument 格式，确保 \" 转义正确
     yt_arg = '{\\"lyricLang\\":\\"zh-Hans\\",\\"captionLang\\":\\"zh-Hans\\",\\"blockUpload\\":true,\\"blockImmersive\\":true,\\"debug\\":false}'
@@ -77,18 +78,63 @@ hostname = %APPEND% -redirector*.googlevideo.com, *.googlevideo.com, www.youtube
     with open("OmniGuard-Predator-MitM.sgmodule", "w", encoding="utf-8") as f:
         f.write(module_content)
 
-# === 4. 其余辅助逻辑保持不变 ===
+# === 4. 生成带动态 Header 的 txt 文件 ===
 def generate_blacklist_txt(cleaned_rules, version_str):
-    header = f"[Adblock Plus 2.0]\\n! Title: iOS-OmniGuard-Blacklist\\n! Version: {version_str}\\n! -------------------------------------------------------------------------------------------------------\\n"
+    header = f"""[Adblock Plus 2.0]
+! Title: iOS-OmniGuard-Blacklist
+! Description: 针对 iOS 环境深度优化的全能黑名单旗舰版。已固化 YouTube 原厂去广告逻辑。
+! Version: {version_str.replace("-", ".").replace(" ", ".")}
+! Codename: Predator-Standard
+! Updated: {version_str}
+! -------------------------------------------------------------------------------------------------------
+
+! === Upstream Synchronized Rules ===
+"""
     with open("iOS-OmniGuard-Blacklist.txt", "w", encoding="utf-8") as f:
         f.write(header + cleaned_rules)
 
+# === 5. 探活脚本并更新 README ===
+def check_script_health(url):
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        return urllib.request.urlopen(req, timeout=10).getcode() == 200
+    except: return False
+
+def update_readme(version_str, health_status):
+    if not os.path.exists("README.md"): return
+    with open("README.md", "r", encoding="utf-8") as f:
+        readme = f.read()
+    
+    # 更新 README 中的时间戳
+    readme = re.sub(r"更新于: \d{4}-\d{2}-\d{2} \d{2}:\d{2}", f"更新于: {version_str}", readme)
+    
+    # 构造状态列表
+    status_text = f"> 更新于: {version_str}\\n- ✅ 上游 DNS 同步完成\\n"
+    for name, is_alive in health_status.items():
+        status_text += f"- {'✅' if is_alive else '❌'} {name} 脚本源状态\\n"
+    
+    # 使用正则替换 README 中的特定区块
+    readme = re.sub(r"> 更新于:.*?(?=\\n---)", status_text, readme, flags=re.DOTALL)
+    
+    with open("README.md", "w", encoding="utf-8") as f:
+        f.write(readme)
+
 if __name__ == "__main__":
+    # 获取北京时间
     bj_time = (datetime.datetime.utcnow() + datetime.timedelta(hours=8)).strftime("%Y-%m-%d %H:%M")
+    
     try:
         req = urllib.request.Request(UPSTREAM_DNS_URL, headers={'User-Agent': 'Mozilla/5.0'})
         raw_dns = urllib.request.urlopen(req).read().decode('utf-8')
-    except: raw_dns = ""
-    cleaned = clean_and_merge_rules(raw_dns)
+    except:
+        raw_dns = ""
+        
+    cleaned_dns = clean_and_merge_rules(raw_dns)
+    
+    # 生成文件
     generate_sgmodule(bj_time)
-    generate_blacklist_txt(cleaned, bj_time)
+    generate_blacklist_txt(cleaned_dns, bj_time)
+    
+    # 探活与 README 更新
+    health = {name: check_script_health(url) for name, url in SCRIPTS.items()}
+    update_readme(bj_time, health)

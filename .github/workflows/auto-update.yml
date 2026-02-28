@@ -1,16 +1,48 @@
-- name: Commit and Push Changes
+name: 🚀 捕食者自动化构建 | Predator Auto Build
+
+on:
+  push:
+    paths:
+      - 'iOS-OmniGuard-Blacklist.txt' # 仅当主规则文件变动时触发
+  workflow_dispatch: # 允许在 GitHub 界面手动点击运行
+
+# 赋予 Action 写入权限，确保能推送修改后的文档
+permissions:
+  contents: write
+
+jobs:
+  build-and-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 拉取代码 (Checkout Repository)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整历史记录，确保 git show 对比逻辑正常
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐍 配置 Python 环境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 🛠️ 运行自动化脚本 (Run Update Script)
+        # 该脚本会同时刷新 .txt, changelog.md 和 README.md
+        run: python scripts/update_rules.py
+
+      - name: 📤 提交并推送变动 (Commit and Push Changes)
         run: |
+          # 配置机器人身份
           git config --local user.email "action@github.com"
           git config --local user.name "github-actions[bot]"
           
-          # --- 核心修复：添加 README.md 或者直接 git add . ---
+          # 核心修复点：必须包含 README.md，否则时间永远不会在 GitHub 上更新
           git add iOS-OmniGuard-Blacklist.txt changelog.md README.md
           
-          # 检查是否有变动，避免空提交报错
+          # 检查暂存区是否有变动，避免空提交导致 Action 报错
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "✅ 所有文档已是最新，无需提交。"
           else
-            # 使用 [skip ci] 确保机器人提交后不会再次触发 Action 导致死循环
-            git commit -m "chore: 自动化刷新所有文档版本及时间 [skip ci]"
+            # 使用 [skip ci] 标记防止机器人推送触发死循环
+            git commit -m "chore: 自动化刷新全量文档版本及时间 [skip ci]"
             git push
           fi

@@ -11,7 +11,7 @@
 ## 📖 项目简介
 **iOS-OmniGuard-Blacklist** 是专为 iOS 高级用户打造的“系统级净网”拦截方案。当你在浏览网页或使用 App 时，往往会遭遇各种开屏广告、追踪器以及隐私泄露风险。
 
-本项目以 **[217heidai](https://github.com/217heidai/adblockfilters)** 的过滤逻辑为环境前提，深度融合 **[BlueSkyXN](https://github.com/BlueSkyXN/AdGuardHomeRules)** 的 `all.txt` 与 `skyrules.txt` 核心域名库，并针对个人特殊拦截需求进行全方位增量丰富。建议将其与 **iOS-OmniGuard-Whitelist** 组合使用，构建完美的攻防闭环。
+**强烈建议将其与本作者兄弟项目 [iOS-OmniGuard-Whitelist](https://github.com/MEyifan20/Whitelist) 组合使用**。黑名单负责全域拦截，白名单负责精准放行苹果核心服务及国内支付/社交关键节点。通过这种“攻防对冲”的逻辑，可以完美防止因暴力拦截导致的 App 无法登录、图片断流或系统自动更新延迟等误杀问题，确保系统 100% 稳定运行。
 
 ---
 
@@ -48,9 +48,9 @@ $$Block \cap \{AD\_Server, Tracker, Analytics\} \setminus \{Whitelist\_Allow\} =
 ---
 
 ## ⚙️ 配置建议
-1. **DNS 规则安装**：进入应用 -> DNS 防护 -> DNS 过滤器 -> 添加过滤器 -> 粘贴上述 TXT 链接（AdGuard 原生支持识别 `||domain^` 语法）。
-2. **执行顺序**：请务必确保该黑名单的排序和优先级**低于**所有白名单，让防护盾在第一层生效。
-3. **配合使用**: 强烈建议与本项目的兄弟版本 `iOS-OmniGuard-Whitelist` 组合使用。
+1. **安装逻辑**：进入应用 -> DNS 防护 -> DNS 过滤器 -> 添加过滤器 -> 粘贴上述 TXT 链接。
+2. **优先级对齐**：**强烈建议** 确保 `iOS-OmniGuard-Whitelist`（白名单）的排序和优先级始终高于本项目，以遵循“先守护放行、后精准拦截”的原则。
+3. **协同运作**: 单独使用本项目可能会因第三方库的激进规则导致误杀，请务必配合兄弟项目 `Whitelist` 以构建完美的攻防闭环。
 
 ---
 
@@ -58,7 +58,7 @@ $$Block \cap \{AD\_Server, Tracker, Analytics\} \setminus \{Whitelist\_Allow\} =
 本项目支持通过 GitHub Actions 实现自动化维护，每日自动同步上游并更新统计数据，确保你的规则永远处于激活状态。
 
 * **规则总数**：`{{TOTAL_RULES}}` 条 (自动去重后)
-* **最后同步**：`{{SYNC_TIME}}` (北京时间 UTC+8)
+* **最后同步**：`{{SYNC_TIME}` (北京时间 UTC+8)
 * **核心来源**：217heidai + BlueSkyXN (All + Sky)
 * **个人来源**：my-rules.txt (个性化丰富包)
 ---

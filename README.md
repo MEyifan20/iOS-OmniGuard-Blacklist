@@ -1,16 +1,3 @@
-Gemini 说
-从你提供的白名单内容来看，确实没有具体的“许可证号”，这是因为在开源项目中，通常使用的是 开源许可证协议（License），而不是像商业软件那样的数字序列号。
-
-你文档末尾提到的 License: MIT 指的是 MIT 许可证，这是一种非常宽松的开源协议。它代表：
-
-你可以自由使用、修改、分发这个项目。
-
-只需要在分发时保留原作者的版权声明即可。
-
-作者不承担任何由于使用该规则导致的风险（免责声明）。
-
-为了让你的 Blacklist 与这个 Whitelist 风格完全锁死，我为你生成了最终的、排版微调后的黑名单 README。
-
 🛡️ iOS-OmniGuard-Blacklist (Predator-Standard)
 [Adblock Plus 2.0]
 ! Title: iOS-OmniGuard-Blacklist (Standard Unified Edition)

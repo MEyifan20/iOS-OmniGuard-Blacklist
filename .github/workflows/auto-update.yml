@@ -1,41 +1,32 @@
-name: Auto Update Rules
+name: Auto Update Rules and Changelog
+
 on:
-  schedule:
-    - cron: '0 21 * * *' # 每天北京时间凌晨 5 点
-  workflow_dispatch:
+  push:
+    paths:
+      - 'iOS-OmniGuard-Blacklist.txt' # 仅当规则文件变动时触发
+  workflow_dispatch: # 允许手动触发
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # 核心：必须显式声明写权限
-    permissions:
-      contents: write
-      
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.x'
 
-      - name: Install dependencies
-        run: pip install requests
-
-      - name: Run update script
-        # 即使你在根目录运行，也要确保脚本内部使用绝对路径或相对定位
+      - name: Run Update Script
         run: python scripts/update_rules.py
 
-      - name: Commit and Push
+      - name: Commit and Push Changes
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add .
-          # 增加判断，只有在有变动时才提交，避免 128 错误
-          if ! git diff --quiet || ! git diff --staged --quiet; then
-            git commit -m "chore: auto update rules and readme [skip ci]"
-            git push
-          else
-            echo "No changes to commit"
-          fi
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add iOS-OmniGuard-Blacklist.txt changelog.md
+          git commit -m "chore: 自动更新版本号与变更日志 [skip ci]" || echo "No changes to commit"
+          git push

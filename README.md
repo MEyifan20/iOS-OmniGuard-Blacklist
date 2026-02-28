@@ -1,7 +1,5 @@
 # 🛡️ iOS-OmniGuard-Blacklist（Predator-Standard）
 
-> **iOS-OmniGuard-Blacklist · 愿您的网络环境干净且自由。**
-
 [广告拦截加 2.0]！
 标题：iOS-OmniGuard-黑名单（标准统一版）！
 描述：针对 iOS 环境深度优化的全能黑名单拦截引擎。整合 217黑带环境前提，融合 BlueSkyXN 双库并加入个人规则丰富，与白名单完美配合。
@@ -57,7 +55,7 @@ $$Block \cap \{AD\_Server, Tracker, Analytics\} \setminus \{Whitelist\_Allow\} =
 ---
 
 ## 📝 变更日志 | Changelog
-详细的版本演进记录、新增/删除规则统计以及自动化去重报告，请参阅：
+详细的版本演进记录、新增/移除规则统计以及自动化去重报告，请参阅：
 👉 **[查看完整更新日志](./changelog.md)**
 
 ---

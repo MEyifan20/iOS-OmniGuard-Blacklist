@@ -3,32 +3,25 @@ import os
 import subprocess
 import re
 
-# 路径配置：严格执行规范
+# 路径配置
 RULES_FILE = "iOS-OmniGuard-Blacklist.txt"
 CHANGELOG_FILE = "changelog.md"
 README_FILE = "README.md"
 
 def get_beijing_time():
-    """获取当前北京时间 (GMT+8)"""
     tz = datetime.timezone(datetime.timedelta(hours=8))
     return datetime.datetime.now(tz)
 
 def get_stats():
-    """获取规则统计数据及变动详情"""
-    if not os.path.exists(RULES_FILE):
-        return 0, 0, 0, 0, []
-    
+    if not os.path.exists(RULES_FILE): return 0, 0, 0, 0, []
     with open(RULES_FILE, "r", encoding="utf-8") as f:
         lines = f.readlines()
-    
     raw_rules = [line.strip() for line in lines if line.strip() and not line.startswith("!")]
-    raw_count = len(raw_rules)
     unique_rules = sorted(list(set(raw_rules)))
-    deduped_count = raw_count - len(unique_rules)
     final_count = len(unique_rules)
+    deduped_count = len(raw_rules) - final_count
     
-    added = 0
-    removed = 0
+    added, removed = 0, 0
     try:
         old_content = subprocess.check_output(["git", "show", f"HEAD:{RULES_FILE}"], stderr=subprocess.DEVNULL).decode("utf-8")
         old_rules = set(line.strip() for line in old_content.splitlines() if line.strip() and not line.startswith("!"))
@@ -37,20 +30,16 @@ def get_stats():
         removed = len(old_rules - current_set)
     except:
         added = final_count
-        removed = 0
-
     return final_count, added, removed, deduped_count, unique_rules
 
 def update_readme(version, time, count, codename):
-    """使用正则锚点动态刷新 README.md 中的元数据"""
-    if not os.path.exists(README_FILE):
-        print(f"⚠️ 未找到 {README_FILE}，跳过同步。")
-        return
+    """【强化版】利用全局 HTML 锚点刷新数据"""
+    if not os.path.exists(README_FILE): return
     
     with open(README_FILE, "r", encoding="utf-8") as f:
         content = f.read()
 
-    # --- 核心修复点：补全丢失的 HTML 锚点匹配 ---
+    # 正则逻辑锁定：找到 start 和 end 标签，并替换中间的任意内容
     replacements = {
         r"()(.*?)()": f"\\1{version}\\3",
         r"()(.*?)()": f"\\1{time}\\3",
@@ -59,10 +48,8 @@ def update_readme(version, time, count, codename):
     }
 
     for pattern, repl in replacements.items():
+        # 即使文档中有多个相同的标签对，也会被全部一次性替换
         content = re.sub(pattern, repl, content, flags=re.DOTALL)
-
-    # 2. 同步刷新页脚的“最后修改时间” (支持加粗或非加粗)
-    content = re.sub(r"(\*\*最后修改时间\*\*|最后修改时间)：(.*)", f"\\1：{time}", content)
 
     with open(README_FILE, "w", encoding="utf-8") as f:
         f.write(content)
@@ -71,29 +58,29 @@ def update():
     now = get_beijing_time()
     formatted_time = now.strftime("%Y-%m-%d %H:%M") + " (GMT+8)"
     version_str = now.strftime("%Y.%m.%d.%H")
-    codename = "掠夺者标准" # 已根据你的最新介绍文档同步代号
+    codename = "掠夺者标准"
 
     final_count, added, removed, deduped, sorted_rules = get_stats()
 
-    # --- 1. 更新主规则文件头部 (保持 Adblock Plus 2.0 风格) ---
+    # 1. 同步刷新 README (重点修复区)
+    update_readme(version_str, formatted_time, final_count, codename)
+
+    # 2. 同步刷新规则文件头部 (严格对齐你的硬核头部格式)
     new_head = [
-        f"[Adblock Plus 2.0]\n",
-        f"! Title: iOS-OmniGuard-Blacklist (Standard Unified Edition)\n",
-        f"! Description: 针对 iOS 环境深度优化的全能黑名单拦截引擎。整合 217heidai 环境前提，融合 BlueSkyXN 双库并加入个人规则丰富，与 Whitelist 完美配合。\n",
-        f"! Version: {version_str}\n",
-        f"! Codename: {codename}\n",
-        f"! Updated: {formatted_time}\n",
-        f"! Rules Count: {final_count:,}\n",
-        f"! -------------------------------------------------------------------------------------------------------\n"
+        f"[广告拦截加 2.0]！\n",
+        f"标题：iOS-OmniGuard-黑名单（标准统一版）！\n",
+        f"描述：针对 iOS 环境深度优化的全能黑名单拦截引擎。整合 217黑带环境前提，融合 BlueSkyXN 双库并加入个人规则丰富，与白名单完美配合。\n",
+        f"版本：{version_str}！\n",
+        f"代号：{codename}！\n",
+        f"更新：{formatted_time} ！\n",
+        f"规则总数：{final_count:,} 条 ！\n",
+        f"! -----------------------------------------------------------------------------------------------------------\n"
     ]
     with open(RULES_FILE, "w", encoding="utf-8") as f:
         f.writelines(new_head)
         f.write("\n".join(sorted_rules) + "\n")
 
-    # --- 2. 更新介绍文档 (生态联动) ---
-    update_readme(version_str, formatted_time, final_count, codename)
-
-    # --- 3. 更新 changelog.md (置顶追加) ---
+    # 3. 同步刷新 changelog.md (置顶追加)
     header = "## 📅 版本更新日志 | Version Changelog\n\n"
     new_entry = (
         f"### 🔖 版本：{version_str}\n"
@@ -112,15 +99,14 @@ def update():
         f"---\n\n"
     )
 
-    old_changelog = ""
+    old_log = ""
     if os.path.exists(CHANGELOG_FILE):
         with open(CHANGELOG_FILE, "r", encoding="utf-8") as f:
-            old_changelog = f.read().replace(header, "")
-    
+            old_log = f.read().replace(header, "")
     with open(CHANGELOG_FILE, "w", encoding="utf-8") as f:
-        f.write(header + new_entry + old_changelog)
+        f.write(header + new_entry + old_log)
 
-    print(f"🚀 [生态联动] 成功同步所有文档，当前代号：{codename}")
+    print(f"✅ [掠夺者] 全量联动刷新成功：{version_str}")
 
 if __name__ == "__main__":
     update()

@@ -1,31 +1,41 @@
 name: Auto Update Rules
 on:
   schedule:
-    - cron: '0 21 * * *' # 每天凌晨 5 点运行 (北京时间)
-  workflow_dispatch: # 支持手动触发
+    - cron: '0 21 * * *' # 每天北京时间凌晨 5 点
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 核心：必须显式声明写权限
+    permissions:
+      contents: write
+      
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.10'
 
       - name: Install dependencies
         run: pip install requests
 
       - name: Run update script
+        # 即使你在根目录运行，也要确保脚本内部使用绝对路径或相对定位
         run: python scripts/update_rules.py
 
       - name: Commit and Push
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git add .
-          git commit -m "chore: auto update rules and readme [skip ci]" || exit 0
-          git push
+          # 增加判断，只有在有变动时才提交，避免 128 错误
+          if ! git diff --quiet || ! git diff --staged --quiet; then
+            git commit -m "chore: auto update rules and readme [skip ci]"
+            git push
+          else
+            echo "No changes to commit"
+          fi

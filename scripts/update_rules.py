@@ -1,51 +1,44 @@
 import datetime
 import os
 
-# 配置路径：严格执行小写路径规范
-rules_path = "rules.txt"
-changelog_path = "changelog.md"  # 已改为全小写
+# 路径配置
+RULES_FILE = "iOS-OmniGuard-Blacklist.txt"
+CHANGELOG_FILE = "changelog.md"
 
-def update_project_files():
-    # 1. 获取当前北京时间 (GMT+8)
-    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
+def update():
+    # 获取北京时间
+    tz = datetime.timezone(datetime.timedelta(hours=8))
+    now = datetime.datetime.now(tz)
     formatted_time = now.strftime("%Y-%m-%d %H:%M") + " (GMT+8)"
     version_str = now.strftime("%Y.%m.%d.%H")
-    
-    # 2. 读取并计算规则总数 (过滤掉以 ! 开头的注释行)
-    if not os.path.exists(rules_path):
-        print(f"❌ Error: {rules_path} not found.")
+
+    if not os.path.exists(RULES_FILE):
         return
 
-    with open(rules_path, "r", encoding="utf-8") as f:
+    with open(RULES_FILE, "r", encoding="utf-8") as f:
         lines = f.readlines()
-    
+
+    # 动态计算规则数
     rules_count = sum(1 for line in lines if line.strip() and not line.startswith("!"))
-    
-    # 3. 动态刷新 rules.txt 头部元数据
-    new_lines = []
+
+    # 刷新头部元数据
+    new_rules = []
     for line in lines:
         if line.startswith("! Version:"):
-            new_lines.append(f"! Version: {version_str}\n")
+            new_rules.append(f"! Version: {version_str}\n")
         elif line.startswith("! Updated:"):
-            new_lines.append(f"! Updated: {formatted_time}\n")
+            new_rules.append(f"! Updated: {formatted_time}\n")
         elif line.startswith("! Rules Count:"):
-            new_lines.append(f"! Rules Count: {rules_count:,}\n")
+            new_rules.append(f"! Rules Count: {rules_count:,}\n")
         else:
-            new_lines.append(line)
-            
-    with open(rules_path, "w", encoding="utf-8") as f:
-        f.writelines(new_lines)
+            new_rules.append(line)
 
-    # 4. 自动化追加 changelog.md (置顶新记录)
+    with open(RULES_FILE, "w", encoding="utf-8") as f:
+        f.writelines(new_rules)
+
+    # 刷新 changelog.md (置顶逻辑)
     header = "## 📅 版本更新日志 | Version Changelog\n\n"
-    
-    if os.path.exists(changelog_path):
-        with open(changelog_path, "r", encoding="utf-8") as f:
-            old_content = f.read()
-    else:
-        old_content = header
-
-    new_log_entry = (
+    new_entry = (
         f"### 🔖 Version: {version_str}\n"
         f"- **Codename:** Predator-Standard\n"
         f"- **Updated:** {formatted_time}\n"
@@ -58,12 +51,13 @@ def update_project_files():
         f"---\n\n"
     )
 
-    # 保持标题置顶，新日志插入标题下方
-    body = old_content.replace(header, "")
-    with open(changelog_path, "w", encoding="utf-8") as f:
-        f.write(header + new_log_entry + body)
+    old_content = ""
+    if os.path.exists(CHANGELOG_FILE):
+        with open(CHANGELOG_FILE, "r", encoding="utf-8") as f:
+            old_content = f.read().replace(header, "")
 
-    print(f"✅ Success: Updated {rules_path} and {changelog_path}")
+    with open(CHANGELOG_FILE, "w", encoding="utf-8") as f:
+        f.write(header + new_entry + old_content)
 
 if __name__ == "__main__":
-    update_project_files()
+    update()

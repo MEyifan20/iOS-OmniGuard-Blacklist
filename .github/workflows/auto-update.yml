@@ -1,39 +1,31 @@
-name: Auto Update Rules & Modules
-
+name: Auto Update Rules
 on:
   schedule:
-    # 每天 UTC 时间 20:00 执行（对应北京时间凌晨 04:00）
-    - cron: '0 20 * * *'
-  workflow_dispatch: # 允许手动触发
-
-permissions:
-  contents: write
+    - cron: '0 21 * * *' # 每天凌晨 5 点运行 (北京时间)
+  workflow_dispatch: # 支持手动触发
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 1
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.x'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
 
-    - name: Run Update Script
-      run: |
-        # 严格遵守小写路径规范
-        python scripts/update_rules.py
+      - name: Install dependencies
+        run: pip install requests
 
-    - name: Commit and Push Changes
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git add .
-        # 强制提交：即使规则没变，时间戳的变化也会触发 Commit
-        git commit -m "Auto-update: Sync rules and refresh timestamps [skip ci]" || echo "No changes to commit"
-        git push
+      - name: Run update script
+        run: python scripts/update_rules.py
+
+      - name: Commit and Push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "chore: auto update rules and readme [skip ci]" || exit 0
+          git push

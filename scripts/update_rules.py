@@ -1,70 +1,69 @@
-import requests
+import datetime
 import os
-from datetime import datetime, timedelta
 
-# --- 路径锁死逻辑 ---
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.dirname(BASE_DIR)
-README_FILE = os.path.join(ROOT_DIR, "README.md")
-OUTPUT_FILE = os.path.join(ROOT_DIR, "iOS-OmniGuard-Blacklist.txt")
-MY_RULES_FILE = os.path.join(ROOT_DIR, "my-rules.txt")
+# 配置路径：严格执行小写路径规范
+rules_path = "rules.txt"
+changelog_path = "changelog.md"  # 已改为全小写
 
-SOURCE_URLS = [
-    "https://raw.githubusercontent.com/217heidai/adblockfilters/main/rules/adblockdns.txt",
-    "https://raw.githubusercontent.com/BlueSkyXN/AdGuardHomeRules/master/all.txt",
-    "https://raw.githubusercontent.com/BlueSkyXN/AdGuardHomeRules/master/skyrules.txt"
-]
-
-def get_beijing_time():
-    return datetime.utcnow() + timedelta(hours=8)
-
-def update():
-    bj_now = get_beijing_time()
-    v_time = bj_now.strftime("%Y.%m.%d.%H")
-    u_time = bj_now.strftime("%Y-%m-%d %H:%M")
+def update_project_files():
+    # 1. 获取当前北京时间 (GMT+8)
+    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
+    formatted_time = now.strftime("%Y-%m-%d %H:%M") + " (GMT+8)"
+    version_str = now.strftime("%Y.%m.%d.%H")
     
-    # 1. 抓取与去重
-    all_rules = set()
-    for url in SOURCE_URLS:
-        try:
-            r = requests.get(url, timeout=30)
-            if r.status_code == 200:
-                lines = {l.strip() for l in r.text.splitlines() if l.strip() and not l.startswith(('!', '['))}
-                all_rules.update(lines)
-        except: continue
+    # 2. 读取并计算规则总数 (过滤掉以 ! 开头的注释行)
+    if not os.path.exists(rules_path):
+        print(f"❌ Error: {rules_path} not found.")
+        return
+
+    with open(rules_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
     
-    if os.path.exists(MY_RULES_FILE):
-        with open(MY_RULES_FILE, "r", encoding="utf-8") as f:
-            all_rules.update({l.strip() for l in f if l.strip() and not l.startswith(('!', '['))})
+    rules_count = sum(1 for line in lines if line.strip() and not line.startswith("!"))
+    
+    # 3. 动态刷新 rules.txt 头部元数据
+    new_lines = []
+    for line in lines:
+        if line.startswith("! Version:"):
+            new_lines.append(f"! Version: {version_str}\n")
+        elif line.startswith("! Updated:"):
+            new_lines.append(f"! Updated: {formatted_time}\n")
+        elif line.startswith("! Rules Count:"):
+            new_lines.append(f"! Rules Count: {rules_count:,}\n")
+        else:
+            new_lines.append(line)
+            
+    with open(rules_path, "w", encoding="utf-8") as f:
+        f.writelines(new_lines)
 
-    sorted_rules = sorted(list(all_rules))
-    total_count = len(sorted_rules)
+    # 4. 自动化追加 changelog.md (置顶新记录)
+    header = "## 📅 版本更新日志 | Version Changelog\n\n"
+    
+    if os.path.exists(changelog_path):
+        with open(changelog_path, "r", encoding="utf-8") as f:
+            old_content = f.read()
+    else:
+        old_content = header
 
-    # 2. 写入规则文件
-    header = f"[Adblock Plus 2.0]\n! Title: iOS-OmniGuard-Blacklist\n! Version: {v_time}\n! Updated: {u_time}\n! Total Rules: {total_count}\n! ----------------------------------------------------------\n"
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        f.write(header + "\n".join(sorted_rules))
+    new_log_entry = (
+        f"### 🔖 Version: {version_str}\n"
+        f"- **Codename:** Predator-Standard\n"
+        f"- **Updated:** {formatted_time}\n"
+        f"- **Rules Count:** {rules_count:,}\n"
+        f"- **Status:** 已同步兼容兄弟项目 [iOS-OmniGuard-Whitelist](https://github.com/MEyifan20/iOS-OmniGuard-Whitelist)\n\n"
+        f"---\n\n"
+        f"最后修改时间：{formatted_time}  \n"
+        f"维护者：MEyifan20  \n"
+        f"许可证：MIT\n\n"
+        f"---\n\n"
+    )
 
-    # 3. 写入 README.md (使用简单直接的 replace)
-    if os.path.exists(README_FILE):
-        with open(README_FILE, "r", encoding="utf-8") as f:
-            content = f.read()
+    # 保持标题置顶，新日志插入标题下方
+    body = old_content.replace(header, "")
+    with open(changelog_path, "w", encoding="utf-8") as f:
+        f.write(header + new_log_entry + body)
 
-        # 检查防膨胀：如果文件超过 1MB，说明之前坏了，直接跳过不写，防止 push 失败
-        if len(content) > 1024 * 1024:
-            print("README 文件体积异常，请手动清理后再运行脚本！")
-            return
-
-        # 替换占位符
-        content = content.replace("{{VERSION}}", v_time)
-        content = content.replace("{{UPDATE_TIME}}", u_time)
-        content = content.replace("{{TOTAL_RULES}}", f"{total_count:,}")
-        content = content.replace("{{SYNC_TIME}}", u_time)
-        content = content.replace("{{FOOTER_TIME}}", u_time)
-
-        with open(README_FILE, "w", encoding="utf-8") as f:
-            f.write(content)
-        print(f"成功更新 README！总规则数: {total_count}")
+    print(f"✅ Success: Updated {rules_path} and {changelog_path}")
 
 if __name__ == "__main__":
-    update()
+    update_project_files()

@@ -49,7 +49,7 @@ $$Block \cap \{AD\_Server, Tracker, Analytics\} \setminus \{Whitelist\_Allow\} =
 
 ## ⚙️ 配置建议
 1. **DNS 规则安装**：进入应用 -> DNS 防护 -> DNS 过滤器 -> 添加过滤器 -> 粘贴上述 TXT 链接（AdGuard 原生支持识别 `||domain^` 语法）。
-2. **执行顺序**：请务必确保该黑名单的排序和优先级**低于**所有 white名单，让防护盾在第一层生效。
+2. **执行顺序**：请务必确保该黑名单的排序和优先级**低于**所有白名单，让防护盾在第一层生效。
 3. **配合使用**: 强烈建议与本项目的兄弟版本 `iOS-OmniGuard-Whitelist` 组合使用。
 
 ---
@@ -77,5 +77,5 @@ $$Block \cap \{AD\_Server, Tracker, Analytics\} \setminus \{Whitelist\_Allow\} =
 **iOS-OmniGuard-Blacklist** · 愿你的网络环境干净且自由。
 
 **最后修改时间**：2026-02-28 15:30 (GMT+8)  
-**维护者**：MEyifan20  
-**许可证**：MIT
+**维护者**：[MEyifan20](https://github.com/MEyifan20)  
+**许可证**：[MIT](https://opensource.org/licenses/MIT)

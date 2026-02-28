@@ -36,46 +36,4 @@ https://raw.githubusercontent.com/MEyifan20/iOS-OmniGuard-Blacklist/main/iOS-Omn
 
 ## 🛠️ 技术指标 (Technical Metrics)
 为了实现最大限度的拦截效率，本项目遵循以下过滤逻辑：
-$$Block \cap \{AD\_Server, Tracker, Analytics\} \setminus \{Whitelist\_Allow\} = 0\%$$
-
-| 模块名称 | 保护目标 | 策略强度 |
-| :--- | :--- | :--- |
-| **Ad Server** | 开屏广告、弹窗广告、视频前贴片 | 深度拦截 (Block) |
-| **Trackers** | 友盟、TalkingData、Adjust 等追踪器 | 全面封杀 (Reject) |
-| **Analytics** | 各大厂 App 内部的行为日志上传接口 | 行为抑制 (Mute) |
-| **Security** | 恶意软件分发、钓鱼链接及垃圾域名 | 安全防护 (Secure) |
-
----
-
-## ⚙️ 配置建议
-1. **DNS 规则安装**：进入应用 -> DNS 防护 -> DNS 过滤器 -> 添加过滤器 -> 粘贴上述 TXT 链接（AdGuard 原生支持识别 `||domain^` 语法）。
-2. **执行顺序**：请务必确保该黑名单的排序和优先级**低于**所有白名单，让防护盾在第一层生效。
-3. **配合使用**: 强烈建议与本项目的兄弟版本 `iOS-OmniGuard-Whitelist` 组合使用。
-
----
-
-## 🤖 自动化维护 (Auto-Update)
-本项目支持通过 GitHub Actions 实现自动化维护，每日自动同步上游并更新统计数据，确保你的规则永远处于激活状态。
-
-* **规则总数**：`计算中...` 条 (自动去重后)
-* **最后同步**：`等待脚本运行...` (北京时间 UTC+8)
-* **核心来源**：217heidai + BlueSkyXN (All + Sky)
-* **个人来源**：my-rules.txt (个性化丰富包)
----
-
-## 🤝 致谢与声明
-* **致谢**: 感谢 **217heidai** 与 **BlueSkyXN** 提供的优秀规则基础。
-* **声明**: 本项目仅供技术研究与交流使用，禁止用于任何非法用途。
-
----
-
-## ❤️ 助力项目
-- **点亮 Star**：点击右上角 ⭐ Star，这是对我持续维护最大的动力。
-- **反馈问题**：请提交 [Issues](https://github.com/MEyifan20/iOS-OmniGuard-Blacklist/issues)。
-
----
-**iOS-OmniGuard-Blacklist** · 愿你的网络环境干净且自由。
-
-**最后修改时间**：2026-02-28 15:30 (GMT+8)
-**维护者**：MEyifan20
-**许可证**：MIT
+$$Block \cap \{AD\_Server, Tracker, Analytics

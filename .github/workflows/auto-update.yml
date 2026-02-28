@@ -1,42 +1,41 @@
-name: 🚀 捕食者自动化构建 | Predator Auto Build
-
+name: Auto Update Rules
 on:
-  push:
-    paths:
-      - 'iOS-OmniGuard-Blacklist.txt'
+  schedule:
+    - cron: '0 21 * * *' # 每天北京时间凌晨 5 点
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  build-and-sync:
+  build:
     runs-on: ubuntu-latest
+    # 核心：必须显式声明写权限
+    permissions:
+      contents: write
+      
     steps:
-      - name: 📥 拉取代码
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🐍 配置 Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: 🛠️ 运行脚本 (强制 UTF-8)
-        env:
-          PYTHONUTF8: 1
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run update script
+        # 即使你在根目录运行，也要确保脚本内部使用绝对路径或相对定位
         run: python scripts/update_rules.py
 
-      - name: 📤 提交并推送
+      - name: Commit and Push
         run: |
-          git config --local user.email "action@github.com"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add iOS-OmniGuard-Blacklist.txt changelog.md README.md
-          if git diff --staged --quiet; then
-            echo "No changes"
-          else
-            git commit -m "chore: 自动化联动更新 [skip ci]"
+          git add .
+          # 增加判断，只有在有变动时才提交，避免 128 错误
+          if ! git diff --quiet || ! git diff --staged --quiet; then
+            git commit -m "chore: auto update rules and readme [skip ci]"
             git push
+          else
+            echo "No changes to commit"
           fi

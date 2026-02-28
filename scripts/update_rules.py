@@ -1,50 +1,70 @@
+import requests
 import os
-import re
 from datetime import datetime, timedelta
 
-# 获取路径锁死逻辑
+# --- 路径锁死逻辑 ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 README_FILE = os.path.join(ROOT_DIR, "README.md")
 OUTPUT_FILE = os.path.join(ROOT_DIR, "iOS-OmniGuard-Blacklist.txt")
+MY_RULES_FILE = os.path.join(ROOT_DIR, "my-rules.txt")
 
-def update_files(rules_list):
-    bj_now = datetime.utcnow() + timedelta(hours=8)
-    u_time = bj_now.strftime("%Y-%m-%d %H:%M")
+SOURCE_URLS = [
+    "https://raw.githubusercontent.com/217heidai/adblockfilters/main/rules/adblockdns.txt",
+    "https://raw.githubusercontent.com/BlueSkyXN/AdGuardHomeRules/master/all.txt",
+    "https://raw.githubusercontent.com/BlueSkyXN/AdGuardHomeRules/master/skyrules.txt"
+]
+
+def get_beijing_time():
+    return datetime.utcnow() + timedelta(hours=8)
+
+def update():
+    bj_now = get_beijing_time()
     v_time = bj_now.strftime("%Y.%m.%d.%H")
-    total_count = len(rules_list)
+    u_time = bj_now.strftime("%Y-%m-%d %H:%M")
+    
+    # 1. 抓取与去重
+    all_rules = set()
+    for url in SOURCE_URLS:
+        try:
+            r = requests.get(url, timeout=30)
+            if r.status_code == 200:
+                lines = {l.strip() for l in r.text.splitlines() if l.strip() and not l.startswith(('!', '['))}
+                all_rules.update(lines)
+        except: continue
+    
+    if os.path.exists(MY_RULES_FILE):
+        with open(MY_RULES_FILE, "r", encoding="utf-8") as f:
+            all_rules.update({l.strip() for l in f if l.strip() and not l.startswith(('!', '['))})
 
-    # 1. 先写规则文件 (这个文件大没关系)
-    header = f"[Adblock Plus 2.0]\n! Title: iOS-OmniGuard-Blacklist\n! Version: {v_time}\n! Updated: {u_time}\n! ----------------------------------------------------------\n"
+    sorted_rules = sorted(list(all_rules))
+    total_count = len(sorted_rules)
+
+    # 2. 写入规则文件
+    header = f"[Adblock Plus 2.0]\n! Title: iOS-OmniGuard-Blacklist\n! Version: {v_time}\n! Updated: {u_time}\n! Total Rules: {total_count}\n! ----------------------------------------------------------\n"
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        f.write(header + "\n".join(rules_list))
+        f.write(header + "\n".join(sorted_rules))
 
-    # 2. 【核心修复】安全更新 README.md
+    # 3. 写入 README.md (使用简单直接的 replace)
     if os.path.exists(README_FILE):
         with open(README_FILE, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # 检查：如果内容已经超过 1MB，说明之前写错了，尝试重置它
+        # 检查防膨胀：如果文件超过 1MB，说明之前坏了，直接跳过不写，防止 push 失败
         if len(content) > 1024 * 1024:
-            print("检测到 README 异常膨胀，正在重置为标准模板...")
-            # 这里建议手动恢复一次 README，或者使用你锁死的模板
-            return 
+            print("README 文件体积异常，请手动清理后再运行脚本！")
+            return
 
-        # 动态更新元数据
-        new_meta = (
-            "\n"
-            f"* **规则总数**：`{total_count:,}` 条 (自动去重后)\n"
-            f"* **最后同步**：`{u_time}` (北京时间 UTC+8)\n"
-            f"* **核心来源**：217heidai + BlueSkyXN (All + Sky)\n"
-            f"* **个人来源**：my-rules.txt (个性化丰富包)\n"
-            ""
-        )
-        
-        # 严格替换逻辑
-        content = re.sub(r".*?", new_meta, content, flags=re.DOTALL)
-        content = re.sub(r"! Version: .*", f"! Version: {v_time}", content)
-        content = re.sub(r"! Updated: .*", f"! Updated: {u_time}", content)
-        content = re.sub(r"\*\*最后修改时间\*\*：.*", f"**最后修改时间**：{u_time} (GMT+8)  ", content)
+        # 替换占位符
+        content = content.replace("{{VERSION}}", v_time)
+        content = content.replace("{{UPDATE_TIME}}", u_time)
+        content = content.replace("{{TOTAL_RULES}}", f"{total_count:,}")
+        content = content.replace("{{SYNC_TIME}}", u_time)
+        content = content.replace("{{FOOTER_TIME}}", u_time)
 
         with open(README_FILE, "w", encoding="utf-8") as f:
             f.write(content)
+        print(f"成功更新 README！总规则数: {total_count}")
+
+if __name__ == "__main__":
+    update()

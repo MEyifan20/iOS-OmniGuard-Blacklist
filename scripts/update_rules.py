@@ -1,74 +1,65 @@
-import urllib.request
-import re
-import datetime
 import os
+import re
+from datetime import datetime, timezone, timedelta
 
-# === 1. 配置源 ===
-UPSTREAM_DNS_URL = "https://raw.githubusercontent.com/217heidai/adblockfilters/main/rules/adblockdns.txt"
+# 配置区
+TXT_FILE = "ios-omniguard-blacklist.txt" # 确保小写规范
+SG_MODULE = "omniguard-predator-mitm.sgmodule" # 确保小写规范
+README_FILE = "README.md"
 
-SCRIPTS = {
-    "bili": "https://raw.githubusercontent.com/deezertidal/private/master/js-backup/Script/bilibili_json.js",
-    "bili_proto": "https://raw.githubusercontent.com/app2smile/rules/master/js/bilibili-proto.js",
-    "youtube": "https://raw.githubusercontent.com/Maasea/sgmodule/master/Script/Youtube/youtube.response.js",
-    "baidu": "https://raw.githubusercontent.com/NobyDa/Script/master/Surge/JS/BaiduCloud.js"
-}
+def get_beijing_time():
+    # 获取北京时间 (UTC+8)
+    tz = timezone(timedelta(hours=8))
+    return datetime.now(tz)
 
-# === 2. 逻辑固化生成 (确保画中画生效) ===
-def generate_sgmodule(version_str):
-    # 关键：手动粘贴之所以失败，是因为原代码里有占位符。这里我们填充为标准值。
-    # 严格按照 Maasea 脚本所需的 JSON 格式，不留任何占位符。
-    yt_arg = '{"lyricLang":"zh-Hans","captionLang":"zh-Hans","blockUpload":true,"blockImmersive":true,"debug":false}'
+def update_files():
+    now = get_beijing_time()
+    timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+    version = now.strftime("%Y%m%d.%H%M") # 版本号格式：年月日.时分
+
+    # 1. 读取黑名单并去重、排序
+    if not os.path.exists(TXT_FILE):
+        print(f"Error: {TXT_FILE} not found")
+        return
+
+    with open(TXT_FILE, "r", encoding="utf-8") as f:
+        lines = f.readlines()
     
-    # 将 argument 中的双引号进行 Python 转义，确保输出到文件时是 argument="{"key":"value"}"
-    yt_script_line = f'youtube.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch),requires-body=1,max-size=-1,binary-body-mode=1,script-path={SCRIPTS["youtube"]},argument="{yt_arg.replace("\"", "\\\"")}"'
+    # 过滤注释和空行，提取域名并转小写
+    rules = sorted(list(set(
+        line.strip().lower() for line in lines 
+        if line.strip() and not line.startswith("#")
+    )))
+    rule_count = len(rules)
 
-    module_content = f"""#!name=iOS-OmniGuard Predator (Standard Edition)
-#!desc=状态: 运行中 | 更新: {version_str} | 已固化 Maasea 逻辑，修复画中画权限。
-#!category=OmniGuard
+    # 2. 更新 .sgmodule (Surge 模块)
+    sg_content = [
+        f"#!name=OmniGuard Predator MitM",
+        f"#!desc=拦截广告与追踪器。版本: {version} | 更新时间: {timestamp} | 规则数: {rule_count}",
+        f"#!system=ios",
+        "\n[Rule]",
+        *[f"DOMAIN-SET,https://raw.githubusercontent.com/MEyifan20/iOS-OmniGuard-Blacklist/main/{TXT_FILE},REJECT" for _ in range(1)], # 示例逻辑
+        "\n[MITM]",
+        "hostname = %APPEND% *google*" # 示例逻辑，可按需修改
+    ]
+    
+    with open(SG_MODULE, "w", encoding="utf-8") as f:
+        f.write("\n".join(sg_content))
 
-[Rule]
-AND,((DOMAIN-SUFFIX,googlevideo.com), (PROTOCOL,UDP)),REJECT
-AND,((DOMAIN,youtubei.googleapis.com), (PROTOCOL,UDP)),REJECT
+    # 3. 更新 README.md (自动查找标记并替换)
+    if os.path.exists(README_FILE):
+        with open(README_FILE, "r", encoding="utf-8") as f:
+            readme_data = f.read()
+        
+        # 使用正则替换特定标记的内容
+        readme_data = re.sub(r"规则数量：.*", f"规则数量：`{rule_count}`", readme_data)
+        readme_data = re.sub(r"更新时间：.*", f"更新时间：`{timestamp} (UTC+8)`", readme_data)
+        readme_data = re.sub(r"当前版本：.*", f"当前版本：`{version}`", readme_data)
 
-https://ahrefs.com/writing-tools/paragraph-rewriter
-(^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
-^https?:\/\/[\w-]+\.googlevideo\.com\/(?!(dclk_video_ads|videoplayback\?)).+&oad _ reject-200
-^https?:\/\/(www|s)\.youtube\.com\/api\/stats\/ads _ reject-200
-^https?:\/\/(www|s)\.youtube\.(com|com\.hk)\/(pagead|ptracking) _ reject-200
-^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?adcontext _ reject-200
+        with open(README_FILE, "w", encoding="utf-8") as f:
+            f.write(readme_data)
 
-# --- Bilibili & 其他净化 ---
-^https?:\/\/.*\.amap\.com\/ws\/(boss\/order_web\/\w{{8}}_information|asa\/ads_attribution) reject
-^https?:\/\/pan\.baidu\.com\/act\/.+ad_ reject
-(^https?:\/\/app\.biliintl\.com\/intl\/.+)(&sim_code=\d+)(.+) $1$3 302
-^https?:\/\/app\.bilibili\.com\/x\/resource\/ip reject
-
-[Script]
-{yt_script_line}
-
-biliad1 = type=http-response,pattern=^https?:\/\/api\.(bilibili|biliapi)\.(com|net)\/pgc\/page\/cinema\/tab\?,requires-body=1,script-path={SCRIPTS['bili']}
-biliad12 = type=http-response,pattern=^https:\/\/app\.bilibili\.com\/bilibili\.app\.(view\.v1\.View\/View|dynamic\.v2\.Dynamic\/DynAll)$,requires-body=1,binary-body-mode=1,script-path={SCRIPTS['bili_proto']}
-baidu_cloud = type=http-response,pattern=^https?://pan\.baidu\.com/rest/2\.0/membership/user,requires-body=1,script-path={SCRIPTS['baidu']}
-
-[MITM]
-hostname = %APPEND% -redirector*.googlevideo.com, *.googlevideo.com, www.youtube.com, s.youtube.com, youtubei.googleapis.com, pan.baidu.com, *.amap.com, *.bilibili.com, *.biliapi.net, app.biliintl.com
-"""
-    with open("OmniGuard-Predator-MitM.sgmodule", "w", encoding="utf-8") as f:
-        f.write(module_content)
-
-# === 4. 辅助函数保持不变 ===
-def generate_blacklist_txt(cleaned_rules, version_str):
-    header = f"[Adblock Plus 2.0]\\n! Title: iOS-OmniGuard-Blacklist\\n! Version: {version_str}\\n! Updated: {version_str}\\n"
-    with open("iOS-OmniGuard-Blacklist.txt", "w", encoding="utf-8") as f:
-        f.write(header + cleaned_rules)
+    print(f"✅ 更新成功: 版本 {version}, 规则总数 {rule_count}")
 
 if __name__ == "__main__":
-    bj_time = (datetime.datetime.utcnow() + datetime.timedelta(hours=8)).strftime("%Y-%m-%d %H:%M")
-    try:
-        req = urllib.request.Request(UPSTREAM_DNS_URL, headers={'User-Agent': 'Mozilla/5.0'})
-        raw_dns = urllib.request.urlopen(req).read().decode('utf-8')
-    except: raw_dns = ""
-    # 清洗逻辑
-    cleaned = "\n".join([l for l in raw_dns.splitlines() if "youtube.com" not in l or "stats" not in l])
-    generate_sgmodule(bj_time)
-    generate_blacklist_txt(cleaned, bj_time)
+    update_files()

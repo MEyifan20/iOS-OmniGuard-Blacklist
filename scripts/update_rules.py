@@ -32,9 +32,9 @@ def update_files(rules_list):
         with open(README_FILE, "r", encoding="utf-8") as f:
             content = f.read()
 
-        # 异常膨胀检查（防止正则失控）
+        # 异常膨胀检查
         if len(content) > 1024 * 500:
-            print("❌ 警告: README 文件大小异常，已停止自动写入以防损坏。")
+            print("❌ 警告: README 文件大小异常，已停止。")
             return
 
         # --- 策略 A: 首次替换（针对 {{TAG}} 占位符） ---
@@ -44,6 +44,25 @@ def update_files(rules_list):
         content = content.replace("{{SYNC_TIME}}", u_time)
         content = content.replace("{{FOOTER_TIME}}", u_time)
 
-        # --- 策略 B: 持续更新（针对已经生成过的时间戳进行正则替换） ---
-        # 匹配顶部的 Version 和 Updated
-        content = re.sub(r"! Version: \d+\.\d+\.\
+        # --- 策略 B: 持续更新（正则替换，修复了之前的断行错误） ---
+        # 顶部 Version
+        content = re.sub(r"! Version: \d+\.\d+\.\d+\.\d+", f"! Version: {v_time}", content)
+        # 顶部 Updated
+        content = re.sub(r"! Updated: \d{4}-\d{2}-\d{2} \d{2}:\d{2}", f"! Updated: {u_time}", content)
+        # 规则总数
+        content = re.sub(r"\*\*规则总数\*\*：`[\d,]+` 条", f"**规则总数**：`{total_count:,}` 条", content)
+        # 同步时间
+        content = re.sub(r"\*\*最后同步\*\*：`\d{4}-\d{2}-\d{2} \d{2}:\d{2}`", f"**最后同步**：`{u_time}`", content)
+        # 页脚时间
+        content = re.sub(r"\*\*最后修改时间\*\*：.*", f"**最后修改时间**：{u_time} (GMT+8)  ", content)
+
+        with open(README_FILE, "w", encoding="utf-8") as f:
+            f.write(content)
+        print(f"✅ README.md 动态元数据已刷新 ({u_time})")
+    else:
+        print("❌ 错误: 未找到 README.md 文件")
+
+if __name__ == "__main__":
+    # 模拟规则数据，实际运行时建议从您的源获取
+    rules_list = ["||example.com^", "||ads.net^"]
+    update_files(rules_list)

@@ -3,9 +3,9 @@
 [Adblock Plus 2.0]
 ! Title: iOS-OmniGuard-Blacklist (Standard Unified Edition)
 ! Description: 针对 iOS 环境深度优化的全能黑名单拦截引擎。整合 217heidai 环境前提，融合 BlueSkyXN 双库并加入个人规则丰富，与 Whitelist 完美配合。
-! Version: 2026.02.28.15
+! Version: {{VERSION}}
 ! Codename: Predator-Standard
-! Updated: 2026-02-28 15:30
+! Updated: {{UPDATE_TIME}}
 ! -------------------------------------------------------------------------------------------------------
 
 ## 📖 项目简介
@@ -57,8 +57,8 @@ $$Block \cap \{AD\_Server, Tracker, Analytics\} \setminus \{Whitelist\_Allow\} =
 ## 🤖 自动化维护 (Auto-Update)
 本项目支持通过 GitHub Actions 实现自动化维护，每日自动同步上游并更新统计数据，确保你的规则永远处于激活状态。
 
-* **规则总数**：`计算中...` 条 (自动去重后)
-* **最后同步**：`等待脚本运行...` (北京时间 UTC+8)
+* **规则总数**：`{{TOTAL_RULES}}` 条 (自动去重后)
+* **最后同步**：`{{SYNC_TIME}}` (北京时间 UTC+8)
 * **核心来源**：217heidai + BlueSkyXN (All + Sky)
 * **个人来源**：my-rules.txt (个性化丰富包)
 ---
@@ -76,6 +76,6 @@ $$Block \cap \{AD\_Server, Tracker, Analytics\} \setminus \{Whitelist\_Allow\} =
 ---
 **iOS-OmniGuard-Blacklist** · 愿你的网络环境干净且自由。
 
-**最后修改时间**：2026-02-28 15:30 (GMT+8)  
+**最后修改时间**：{{FOOTER_TIME}} (GMT+8)  
 **维护者**：[MEyifan20](https://github.com/MEyifan20)  
 **许可证**：[MIT](https://opensource.org/licenses/MIT)

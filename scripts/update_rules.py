@@ -21,7 +21,6 @@ def get_stats():
     with open(RULES_FILE, "r", encoding="utf-8") as f:
         lines = f.readlines()
     
-    # 提取纯规则行 (去重并排序)
     raw_rules = [line.strip() for line in lines if line.strip() and not line.startswith("!")]
     raw_count = len(raw_rules)
     unique_rules = sorted(list(set(raw_rules)))
@@ -31,7 +30,6 @@ def get_stats():
     added = 0
     removed = 0
     try:
-        # 与上一次 Git 提交对比
         old_content = subprocess.check_output(["git", "show", f"HEAD:{RULES_FILE}"], stderr=subprocess.DEVNULL).decode("utf-8")
         old_rules = set(line.strip() for line in old_content.splitlines() if line.strip() and not line.startswith("!"))
         current_set = set(unique_rules)
@@ -52,7 +50,7 @@ def update_readme(version, time, count, codename):
     with open(README_FILE, "r", encoding="utf-8") as f:
         content = f.read()
 
-    # 1. 定义替换规则 (对应 README 中的 HTML 锚点)
+    # --- 核心修复点：补全丢失的 HTML 锚点匹配 ---
     replacements = {
         r"()(.*?)()": f"\\1{version}\\3",
         r"()(.*?)()": f"\\1{time}\\3",
@@ -63,8 +61,8 @@ def update_readme(version, time, count, codename):
     for pattern, repl in replacements.items():
         content = re.sub(pattern, repl, content, flags=re.DOTALL)
 
-    # 2. 同步刷新页脚的“最后修改时间”
-    content = re.sub(r"(最后修改时间：)(.*)", f"\\1{time}", content)
+    # 2. 同步刷新页脚的“最后修改时间” (支持加粗或非加粗)
+    content = re.sub(r"(\*\*最后修改时间\*\*|最后修改时间)：(.*)", f"\\1：{time}", content)
 
     with open(README_FILE, "w", encoding="utf-8") as f:
         f.write(content)
@@ -73,23 +71,26 @@ def update():
     now = get_beijing_time()
     formatted_time = now.strftime("%Y-%m-%d %H:%M") + " (GMT+8)"
     version_str = now.strftime("%Y.%m.%d.%H")
-    codename = "捕食者-标准型"
+    codename = "掠夺者标准" # 已根据你的最新介绍文档同步代号
 
     final_count, added, removed, deduped, sorted_rules = get_stats()
 
-    # --- 1. 更新规则文件头部 ---
+    # --- 1. 更新主规则文件头部 (保持 Adblock Plus 2.0 风格) ---
     new_head = [
+        f"[Adblock Plus 2.0]\n",
+        f"! Title: iOS-OmniGuard-Blacklist (Standard Unified Edition)\n",
+        f"! Description: 针对 iOS 环境深度优化的全能黑名单拦截引擎。整合 217heidai 环境前提，融合 BlueSkyXN 双库并加入个人规则丰富，与 Whitelist 完美配合。\n",
         f"! Version: {version_str}\n",
-        f"! 代号: {codename}\n",
+        f"! Codename: {codename}\n",
         f"! Updated: {formatted_time}\n",
         f"! Rules Count: {final_count:,}\n",
-        "! --------------------------------------------------\n"
+        f"! -------------------------------------------------------------------------------------------------------\n"
     ]
     with open(RULES_FILE, "w", encoding="utf-8") as f:
         f.writelines(new_head)
         f.write("\n".join(sorted_rules) + "\n")
 
-    # --- 2. 更新 README.md (生态联动) ---
+    # --- 2. 更新介绍文档 (生态联动) ---
     update_readme(version_str, formatted_time, final_count, codename)
 
     # --- 3. 更新 changelog.md (置顶追加) ---
@@ -119,7 +120,7 @@ def update():
     with open(CHANGELOG_FILE, "w", encoding="utf-8") as f:
         f.write(header + new_entry + old_changelog)
 
-    print(f"🚀 [生态联动] 成功同步 {RULES_FILE}, {README_FILE} 和 {CHANGELOG_FILE}!")
+    print(f"🚀 [生态联动] 成功同步所有文档，当前代号：{codename}")
 
 if __name__ == "__main__":
     update()

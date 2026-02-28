@@ -6,6 +6,11 @@ on:
       - 'iOS-OmniGuard-Blacklist.txt' # 仅当规则文件变动时触发
   workflow_dispatch: # 允许手动触发
 
+# --- 核心修复：添加以下 permissions 字段 ---
+permissions:
+  contents: write  # 赋予脚本推送代码到仓库的写权限
+# ---------------------------------------
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,6 +19,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # 使用默认 token 即可，因为上面已经声明了 write 权限
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -26,7 +33,13 @@ jobs:
       - name: Commit and Push Changes
         run: |
           git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.name "github-actions[bot]"
           git add iOS-OmniGuard-Blacklist.txt changelog.md
-          git commit -m "chore: 自动更新版本号与变更日志 [skip ci]" || echo "No changes to commit"
-          git push
+          
+          # 检查是否有变动，避免空提交报错
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: 自动更新版本号与变更日志 [skip ci]"
+            git push
+          fi
